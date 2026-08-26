@@ -1,4 +1,4 @@
-module equilotl
+module narelotl
 
 go 1.26.2
 
