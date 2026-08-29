@@ -2,7 +2,14 @@
  * Narecord settings den — applied by Narelotl after Install / Reinstall.
  * Targets Equicord's injected settings layout keys (equicord_section / equicord_main /
  * equicord_plugins) and the title-bar Equicord Toolbox (.vc-toolbox-btn).
- * Plugin-origin filters and badges are left alone.
+ *
+ * Plugins tab: Equicord marks Narecord's set as userplugins (orange puzzle,
+ * tooltip "User Plugin"). Kill that mark and label Narecord Plugin. Each
+ * Narecord card gets its own look — not one den coat. Equicord/Vencord
+ * origin badges and type filters stay untouched.
+ *
+ * Per-card hooks: AddonCard puts plugin.description on .vc-addon-note[title].
+ * Userplugin badge is img.vc-plugins-source[alt="User"] (userplugin.png).
  */
 
 .nr-den-pic {
@@ -196,4 +203,478 @@
         #1a1713;
     border: 1px solid #3a3328;
     box-shadow: inset 0 0 0 1px rgb(197 208 180 / 8%);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Plugins tab — Narecord cards (not Equicord User Plugin)                    */
+/* narecord-plugin-cards: shared badge/label                                  */
+/* Shared: kill orange puzzle + Discord "User Plugin" tooltip; label only.    */
+/* No moss/rose fill here. Per-plugin looks are below.                        */
+/* -------------------------------------------------------------------------- */
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]),
+.vc-addon-card:has(img[src*="userplugin.png"]) {
+    --nr-plugin-label: var(--text-muted, #b9bbbe);
+    --nr-plugin-mark: #4f545c;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]) .vc-addon-source,
+.vc-addon-card:has(img[src*="userplugin.png"]) .vc-addon-source {
+    pointer-events: none;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 52px;
+    margin-right: 4px;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]) .vc-plugins-source,
+.vc-addon-card:has(img[src*="userplugin.png"]) .vc-plugins-source {
+    display: none !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]) .vc-addon-source::before,
+.vc-addon-card:has(img[src*="userplugin.png"]) .vc-addon-source::before {
+    content: "";
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 5px;
+    background: var(--nr-plugin-mark);
+    box-sizing: border-box;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]) .vc-addon-source::after,
+.vc-addon-card:has(img[src*="userplugin.png"]) .vc-addon-source::after {
+    content: "Narecord Plugin";
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    line-height: 1.15;
+    text-align: center;
+    text-transform: uppercase;
+    max-width: 52px;
+    color: var(--nr-plugin-label);
+}
+
+/* narecord-plugin-cards: per-plugin looks */
+
+/* Abyss — the seven layers, not a den sticker */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Layers, relics"]) {
+    --nr-plugin-label: #c8eef8;
+    background:
+        linear-gradient(180deg,
+            #7ec8e3 0%,
+            #3d8b6e 16%,
+            #c4a35a 32%,
+            #8b5e3c 48%,
+            #5c2a4a 64%,
+            #2a1f4a 80%,
+            #1a0a12 100%) !important;
+    border: 1px solid rgb(228 192 74 / 45%) !important;
+    color: #fff6e4;
+    box-shadow: inset 0 0 40px rgb(0 0 0 / 35%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Layers, relics"]) .vc-addon-note {
+    color: #fff6e4 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Layers, relics"]) .vc-addon-source::before {
+    border-radius: 2px;
+    background: linear-gradient(180deg, #7ec8e3, #3d8b6e, #c4a35a, #8b5e3c, #5c2a4a, #2a1f4a, #1a0a12);
+    box-shadow: 0 0 0 1px rgb(228 192 74 / 50%);
+}
+
+/* AbyssDepth — titlebar depth well */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Thin Abyss depth strip"]) {
+    --nr-plugin-label: #e4c04a;
+    background:
+        linear-gradient(180deg, rgb(126 200 227 / 22%) 0 10px, #100d12 10px) !important;
+    border: 1px solid rgb(200 238 248 / 28%) !important;
+    color: #fff6e4;
+    box-shadow: inset 0 8px 0 rgb(228 192 74 / 35%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Thin Abyss depth strip"]) .vc-addon-note {
+    color: #d8d0c4 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Thin Abyss depth strip"]) .vc-addon-source::before {
+    border-radius: 99px;
+    background:
+        linear-gradient(90deg, #7ec8e3, #3d8b6e, #c4a35a, #8b5e3c, #5c2a4a, #2a1f4a, #1a0a12);
+    box-shadow: inset 0 0 0 2px #100d12, 0 0 6px #e4c04a;
+}
+
+/* BlessingOrCurse — gold blessing / dark curse split */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat button: random Blessing"]) {
+    --nr-plugin-label: #e4c04a;
+    background: linear-gradient(135deg, #e4c04a 0 50%, #1a0a12 50%) !important;
+    border: 1px solid #e4c04a !important;
+    color: #fff6e4;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat button: random Blessing"]) .vc-addon-title {
+    color: #1a0a12;
+    text-shadow: 1px 0 0 #fff6e4;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat button: random Blessing"]) .vc-addon-note {
+    color: #fff6e4 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat button: random Blessing"]) .vc-addon-source::before {
+    background: linear-gradient(90deg, #e4c04a 50%, #1a0a12 50%);
+    box-shadow: 0 0 0 1px #fff6e4;
+}
+
+/* Hideout — the one card that uses den bark/moss/rose + Narehate */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title="Nanachi hideout look."]) {
+    --nr-plugin-label: #c5d0b4;
+    background:
+        url("__NAREHATE_LG__") right -8px bottom -8px / 56px 56px no-repeat,
+        linear-gradient(135deg, rgb(108 122 86 / 28%), #1a1713 55%) !important;
+    border: 1px solid #3a3328 !important;
+    color: #e8dcc6;
+    box-shadow: inset 3px 0 0 #8b3a44;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title="Nanachi hideout look."]) .vc-addon-note {
+    color: #c5d0b4 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title="Nanachi hideout look."]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: url("__NAREHATE__") center / cover no-repeat;
+    box-shadow: 0 0 0 1.5px #6c7a56, 0 0 8px rgb(139 58 68 / 40%);
+}
+
+/* Incinerator — charged cyan rail */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Charged incinerator rail"]) {
+    --nr-plugin-label: #b4ebff;
+    background:
+        radial-gradient(circle at 12% 50%, #fff 0 4px, rgb(80 190 255 / 55%) 5px, transparent 42%),
+        linear-gradient(90deg, #0a1a40, #123a80 40%, #1e6eff) !important;
+    border: 1px solid rgb(140 220 255 / 55%) !important;
+    color: #e6f7ff;
+    box-shadow: 0 0 16px rgb(30 110 255 / 35%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Charged incinerator rail"]) .vc-addon-note {
+    color: #c8ecff !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Charged incinerator rail"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #fff, #b4ebff 35%, #1e64ff);
+    box-shadow: 0 0 10px #50beff;
+}
+
+/* MittyCompanion — Mitty portrait, not Nanachi */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Small Mitty flair"]) {
+    --nr-plugin-label: #e8b4c4;
+    background:
+        url("__MITTY__") right 8px center / 40px 40px no-repeat,
+        linear-gradient(135deg, #3a2030, #1a1014) !important;
+    border: 1px solid rgb(232 180 196 / 40%) !important;
+    color: #f4ead8;
+    padding-right: 52px;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Small Mitty flair"]) .vc-addon-note {
+    color: #e8b4c4 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Small Mitty flair"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: url("__MITTY__") center / cover no-repeat;
+    box-shadow: 0 0 0 1.5px #e8b4c4;
+}
+
+/* NanachiQuotes — Narehate + speech */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat bar button that sends a random Nanachi"]) {
+    --nr-plugin-label: #e8dcc6;
+    background:
+        url("__NAREHATE__") 10px calc(100% - 10px) / 28px 28px no-repeat,
+        linear-gradient(180deg, #2a241c, #16130f) !important;
+    border: 1px solid rgb(232 220 198 / 30%) !important;
+    color: #f4ead8;
+    padding-left: 44px;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat bar button that sends a random Nanachi"]) .vc-addon-note {
+    color: #d4c8b0 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat bar button that sends a random Nanachi"]) .vc-addon-source::before {
+    border-radius: 50% 50% 50% 4px;
+    background: #e8dcc6;
+    box-shadow: 0 0 0 2px #2a241c;
+}
+
+/* NareMotion — pop / wiggle */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Pops new messages"]) {
+    --nr-plugin-label: #f4ead8;
+    background: radial-gradient(circle at 80% 20%, rgb(255 255 255 / 18%), transparent 36%), #221a28 !important;
+    border: 1px dashed rgb(244 234 216 / 35%) !important;
+    color: #f4ead8;
+    transform-origin: center;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Pops new messages"]) .vc-addon-note {
+    color: #d8cce0 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Pops new messages"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff, #c9a0ff);
+    box-shadow: 0 0 0 3px rgb(201 160 255 / 35%);
+}
+
+/* NareNotes — field notebook, lined cream paper, gold spine */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Field notebook"]) {
+    --nr-plugin-label: #6b5420;
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 13px,
+            rgb(139 105 20 / 22%) 13px,
+            rgb(139 105 20 / 22%) 14px
+        ),
+        linear-gradient(90deg, #c45c4a 0 7px, #f4ead8 7px) !important;
+    border: 1px solid #d4c4a8 !important;
+    color: #3a3224;
+    box-shadow: inset 0 0 0 1px rgb(228 192 74 / 30%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Field notebook"]) .vc-addon-title,
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Field notebook"]) .vc-addon-note {
+    color: #3a3224 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Field notebook"]) .vc-addon-source::before {
+    border-radius: 2px 5px 5px 2px;
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 3px,
+            rgb(139 105 20 / 35%) 3px,
+            rgb(139 105 20 / 35%) 4px
+        ),
+        linear-gradient(90deg, #c45c4a 0 4px, #f4ead8 4px);
+    box-shadow: 1px 1px 0 #c4b494;
+}
+
+/* NarehateBadge — Nanachi-head badge */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Detailed Nanachi-head"]) {
+    --nr-plugin-label: #e8dcc6;
+    background:
+        url("__NAREHATE__") right 6px center / 36px 36px no-repeat,
+        radial-gradient(circle at 85% 50%, rgb(108 122 86 / 25%), #161410 55%) !important;
+    border: 1px solid rgb(228 192 74 / 40%) !important;
+    color: #f4ead8;
+    padding-right: 48px;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Detailed Nanachi-head"]) .vc-addon-note {
+    color: #c5d0b4 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Detailed Nanachi-head"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: url("__NAREHATE__") center / cover no-repeat;
+    box-shadow: 0 0 0 2px #e4c04a;
+}
+
+/* Narelogs — gone-journal, gold/rose flash (plugin's own palette) */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Nanachi journal"]) {
+    --nr-plugin-label: #e4c04a;
+    background:
+        linear-gradient(90deg, rgb(228 192 74 / 18%), rgb(139 58 68 / 22%)),
+        #120e14 !important;
+    border: 1px solid rgb(228 192 74 / 40%) !important;
+    color: #fff6e4;
+    box-shadow: inset 0 -8px 0 rgb(139 58 68 / 35%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Nanachi journal"]) .vc-addon-note {
+    color: #d8c8b8 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Nanachi journal"]) .vc-addon-source::before {
+    background: #120e14;
+    border: 2px solid #e4c04a;
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgb(139 58 68 / 70%);
+}
+
+/* NetherworldStew — broth, not bark */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat button that posts a random Abyss food"]) {
+    --nr-plugin-label: #e8c47a;
+    background:
+        radial-gradient(ellipse at 50% 120%, #c45a20 0 28%, transparent 55%),
+        linear-gradient(180deg, #4a2a14, #1e120a) !important;
+    border: 1px solid #c47a38 !important;
+    color: #f4ead8;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat button that posts a random Abyss food"]) .vc-addon-note {
+    color: #e8c47a !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Chat button that posts a random Abyss food"]) .vc-addon-source::before {
+    border-radius: 50% 50% 45% 45%;
+    background: radial-gradient(circle at 50% 60%, #e8c47a, #8b3a10 70%);
+    box-shadow: inset 0 -4px 0 #5a2208;
+}
+
+/* Nnaa — Nanachi voice, Narehate mark */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Voice, chat-bar toggle"]) {
+    --nr-plugin-label: #e8dcc6;
+    background:
+        url("__NAREHATE__") left 8px center / 32px 32px no-repeat,
+        linear-gradient(90deg, #2a2218, #1a1510) !important;
+    border: 1px solid rgb(232 220 198 / 28%) !important;
+    color: #f4ead8;
+    padding-left: 44px;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Voice, chat-bar toggle"]) .vc-addon-note {
+    color: #d4c8b0 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Voice, chat-bar toggle"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: url("__NAREHATE__") center / cover no-repeat;
+}
+
+/* NnaaSpeak — suffix / speech bubble, not the portrait sticker */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Optionally appends nnaa"]) {
+    --nr-plugin-label: #f4ead8;
+    background: linear-gradient(180deg, #2c2830, #1c1820) !important;
+    border: 1px solid rgb(244 234 216 / 25%) !important;
+    color: #f4ead8;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Optionally appends nnaa"]) .vc-addon-note {
+    color: #c8c0d0 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Optionally appends nnaa"]) .vc-addon-source::before {
+    width: 24px;
+    border-radius: 8px 8px 8px 2px;
+    background: #f4ead8;
+    box-shadow: 3px 8px 0 -5px #f4ead8;
+}
+
+/* OrthClock — gold Orth time */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Small Orth-time clock"]) {
+    --nr-plugin-label: #e4c04a;
+    background: radial-gradient(circle at 85% 50%, rgb(228 192 74 / 18%), #1a1510) !important;
+    border: 1px solid rgb(228 192 74 / 45%) !important;
+    color: #e4c04a;
+    box-shadow: 0 0 12px rgb(139 58 68 / 40%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Small Orth-time clock"]) .vc-addon-note {
+    color: #d4c090 !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Small Orth-time clock"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background:
+        conic-gradient(#e4c04a 0 8%, transparent 8% 100%),
+        radial-gradient(circle, #1a1510 55%, #e4c04a 56% 70%, #1a1510 71%);
+    box-shadow: 0 0 8px rgb(228 192 74 / 50%);
+}
+
+/* RainbowFall — falling orbs */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Rainbow stars and orbs fall"]) {
+    --nr-plugin-label: #ffee00;
+    background: linear-gradient(180deg, #ff0040, #ff6a00, #ffee00, #00ff66, #00ccff, #aa00ff) !important;
+    border: 1px solid #fff !important;
+    color: #fff;
+    text-shadow: 0 1px 2px #000;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Rainbow stars and orbs fall"]) .vc-addon-note {
+    color: #fff !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Rainbow stars and orbs fall"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff, #00ccff 40%, #aa00ff);
+    box-shadow: 0 0 10px #ff00cc;
+}
+
+/* RainbowStars — 5-point stars, not orbs */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Rainbow 5-point stars"]) {
+    --nr-plugin-label: #fff;
+    background:
+        radial-gradient(circle at 20% 30%, #ffee00 0 3px, transparent 4px),
+        radial-gradient(circle at 70% 20%, #ff0040 0 2px, transparent 3px),
+        radial-gradient(circle at 80% 70%, #00ccff 0 3px, transparent 4px),
+        linear-gradient(135deg, #1a1030, #0a0618) !important;
+    border: 1px solid #aa00ff !important;
+    color: #fff;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Rainbow 5-point stars"]) .vc-addon-note {
+    color: #e8d0ff !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Rainbow 5-point stars"]) .vc-addon-source::before {
+    background: #ffee00;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    box-shadow: none;
+    border-radius: 0;
+}
+
+/* RelicPing — gold keyword hit */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Highlights configured Abyss keywords"]) {
+    --nr-plugin-label: #e4c04a;
+    background: #1a1814 !important;
+    border: 1px solid #e4c04a !important;
+    color: #f4ead8;
+    box-shadow: 0 0 12px rgb(228 192 74 / 35%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Highlights configured Abyss keywords"]) .vc-addon-note {
+    color: #e4c04a !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Highlights configured Abyss keywords"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: #e4c04a;
+    box-shadow: 0 0 0 4px rgb(228 192 74 / 30%), 0 0 0 8px rgb(228 192 74 / 12%);
+}
+
+/* WhistleRank — bell → white whistle stripes */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Tracks a playful local whistle rank"]) {
+    --nr-plugin-label: #f1c40f;
+    background: linear-gradient(90deg,
+        #c0c0c0 0 16%,
+        #e74c3c 16% 33%,
+        #3498db 33% 50%,
+        #f1c40f 50% 66%,
+        #2c3e50 66% 83%,
+        #ecf0f1 83% 100%) !important;
+    border: 1px solid #2c3e50 !important;
+    color: #1a1a1a;
+    text-shadow: 0 1px 0 rgb(255 255 255 / 50%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Tracks a playful local whistle rank"]) .vc-addon-note {
+    color: #1a1a1a !important;
+    text-shadow: 0 1px 0 rgb(255 255 255 / 40%);
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Tracks a playful local whistle rank"]) .vc-addon-source::before {
+    border-radius: 50%;
+    background: conic-gradient(#c0c0c0, #e74c3c, #3498db, #f1c40f, #2c3e50, #ecf0f1);
+    box-shadow: 0 0 0 2px #2c3e50;
 }
