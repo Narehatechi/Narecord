@@ -25,6 +25,8 @@ func TestDenCSSEmbedsPortraitsAndDenCopy(t *testing.T) {
 		"equicord_plugins",
 		"equicord_section",
 		"vc-special-card",
+		"Narecord Toolbox",
+		"vc-toolbox-btn",
 	} {
 		if !strings.Contains(css, needle) {
 			t.Errorf("den CSS missing %q", needle)
@@ -86,6 +88,10 @@ func TestEnableDenInSettingsJSONPreservesOtherKeys(t *testing.T) {
 	if plugins["Foo"] == nil {
 		t.Fatal("existing plugin settings were wiped")
 	}
+	tb, _ := plugins[denToolboxPlugin].(map[string]any)
+	if tb["enabled"] != true {
+		t.Fatal("EquicordToolbox should be enabled so the title-bar toolbox ships")
+	}
 
 	out2, err := enableDenInSettingsJSON(out)
 	if err != nil {
@@ -133,6 +139,9 @@ func TestInstallDenIntoWritesThemeQuickCSSAndSettings(t *testing.T) {
 	if !strings.Contains(string(quick), denQuickCSSBegin) || !strings.Contains(string(quick), "equicord_main") {
 		t.Fatalf("quickCss missing den: %s", quick)
 	}
+	if !strings.Contains(string(quick), "Narecord Toolbox") || !strings.Contains(string(quick), "vc-toolbox-btn") {
+		t.Fatalf("quickCss missing toolbox den: %s", quick)
+	}
 
 	settings, err := os.ReadFile(path.Join(root, "settings", "settings.json"))
 	if err != nil {
@@ -140,5 +149,59 @@ func TestInstallDenIntoWritesThemeQuickCSSAndSettings(t *testing.T) {
 	}
 	if !strings.Contains(string(settings), denThemeFileName) || !strings.Contains(string(settings), `"useQuickCss": true`) {
 		t.Fatalf("settings.json not enabled: %s", settings)
+	}
+	if !strings.Contains(string(settings), denToolboxPlugin) {
+		t.Fatalf("settings.json did not enable toolbox plugin: %s", settings)
+	}
+}
+
+func TestPatchAsarEquicordToolboxRetitlesWithoutTouchingPluginId(t *testing.T) {
+	if len(equicordToolboxLabel) != len(narecordToolboxLabel) {
+		t.Fatalf("labels must be equal length: %d vs %d", len(equicordToolboxLabel), len(narecordToolboxLabel))
+	}
+	dir := t.TempDir()
+	asar := path.Join(dir, "desktop.asar")
+	in := []byte("id:EquicordToolbox tooltip:Equicord Toolbox more Equicord Toolbox end")
+	if err := os.WriteFile(asar, in, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchAsarEquicordToolbox(asar); err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(asar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(out)
+	if strings.Contains(got, "Equicord Toolbox") {
+		t.Fatalf("label left behind: %s", got)
+	}
+	if !strings.Contains(got, "Narecord Toolbox") {
+		t.Fatalf("Narecord Toolbox missing: %s", got)
+	}
+	if strings.Count(got, "Narecord Toolbox") != 2 {
+		t.Fatalf("expected 2 Narecord Toolbox, got %s", got)
+	}
+	if !strings.Contains(got, "EquicordToolbox") {
+		t.Fatal("plugin id EquicordToolbox must stay")
+	}
+}
+
+func TestPatchAsarEquicordToolboxNoopWhenAlreadyNarecord(t *testing.T) {
+	dir := t.TempDir()
+	asar := path.Join(dir, "desktop.asar")
+	in := []byte("tooltip:Narecord Toolbox plugin:EquicordToolbox")
+	if err := os.WriteFile(asar, in, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchAsarEquicordToolbox(asar); err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(asar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(out) != string(in) {
+		t.Fatalf("asar changed when already Narecord: %s", out)
 	}
 }
