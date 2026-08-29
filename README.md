@@ -4,7 +4,7 @@ Cross-platform GUI/CLI installer for [Narecord](https://github.com/Narehatechi/N
 
 This is a rebrand of [Equilotl](https://github.com/Equicord/Equilotl) (itself a fork of the Vencord installer). GPL-3.0.
 
-After Install, Discord User Settings should show **Narecord Settings** with a Nanachi/Narehate portrait on the first row (not an Equicord gear), Mitty on Plugins, moss/rose selected-row chrome, and a den banner on the Narecord page.
+After Install, Discord User Settings should show **Narecord Settings** with a Nanachi/Narehate portrait on the first row (not an Equicord gear), Mitty on Plugins, moss/rose selected-row chrome, and a den banner on the Narecord page. On the Plugins tab, Narecord's set is labeled **Narecord Plugin** (not Equicord's User Plugin mark), and each of those cards has its own look (Abyss is the layers, NareNotes is a notebook, and so on). Real Equicord/Vencord plugin cards stay as they are.
 
 ## Usage
 

@@ -73,7 +73,7 @@ func denThemeCSS() string {
 	return `/**
  * @name Narecord Den
  * @author Narehatechi
- * @description Nanachi/Mitty portraits, Narecord Toolbox title-bar, and moss/rose hideout chrome.
+ * @description Nanachi/Mitty portraits, Narecord Toolbox title-bar, moss/rose hideout chrome, and per-plugin Plugin cards.
  * @version 1.0.0
  */
 
@@ -213,8 +213,8 @@ func installDenInto(root string) error {
 }
 
 // InstallDen writes the Narecord settings den (portraits, header, moss/rose chrome,
-// banner) into Narecord and Equicord config dirs so Discord User Settings shows it
-// after this installer patches Discord.
+// banner, Narecord Toolbox, and per-plugin Plugin cards) into Narecord and Equicord
+// config dirs so Discord User Settings shows it after this installer patches Discord.
 func InstallDen() error {
 	css := denCSS()
 	if !strings.Contains(css, "Narecord Settings") || !strings.Contains(css, "data:image/webp") {
@@ -222,6 +222,9 @@ func InstallDen() error {
 	}
 	if !strings.Contains(css, "Narecord Toolbox") || !strings.Contains(css, "vc-toolbox-btn") {
 		return errors.New("den CSS failed to embed Narecord Toolbox")
+	}
+	if !strings.Contains(css, "Narecord Plugin") || !strings.Contains(css, `alt="User"`) {
+		return errors.New("den CSS failed to embed Narecord plugin cards")
 	}
 
 	dirs := denDataDirs()

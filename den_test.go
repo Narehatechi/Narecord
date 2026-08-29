@@ -7,6 +7,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	path "path/filepath"
@@ -27,6 +28,10 @@ func TestDenCSSEmbedsPortraitsAndDenCopy(t *testing.T) {
 		"vc-special-card",
 		"Narecord Toolbox",
 		"vc-toolbox-btn",
+		"Narecord Plugin",
+		`alt="User"`,
+		"userplugin.png",
+		"vc-addon-card",
 	} {
 		if !strings.Contains(css, needle) {
 			t.Errorf("den CSS missing %q", needle)
@@ -37,12 +42,78 @@ func TestDenCSSEmbedsPortraitsAndDenCopy(t *testing.T) {
 	}
 }
 
-func TestDenCSSDoesNotTouchPluginOriginUI(t *testing.T) {
+func TestDenCSSLeavesEquicordPluginOriginAlone(t *testing.T) {
 	css := denCSS()
-	for _, needle := range []string{"Show Equicord", "Equicord Plugin", "Equicloud", "vc-plugin-badge"} {
+	for _, needle := range []string{"Show Equicord", "Equicord Plugin", "Equicloud", "vc-plugin-badge", `[alt="Equicord"]`, `[alt="Vencord"]`} {
 		if strings.Contains(css, needle) {
-			t.Errorf("den CSS should not target plugin-origin UI %q", needle)
+			t.Errorf("den CSS should not restyle Equicord/Vencord origin UI %q", needle)
 		}
+	}
+}
+
+func TestDenCSSRetitlesNarecordUserpluginCards(t *testing.T) {
+	css := denCSS()
+	for _, needle := range []string{
+		"Narecord Plugin",
+		`alt="User"`,
+		"userplugin.png",
+		"Layers, relics",
+		"Field notebook",
+		"repeating-linear-gradient",
+		"Thin Abyss depth strip",
+		"Nanachi hideout look.",
+		"Charged incinerator rail",
+		"Small Mitty flair",
+		"pointer-events: none",
+	} {
+		if !strings.Contains(css, needle) {
+			t.Errorf("den CSS missing Narecord plugin-card hook %q", needle)
+		}
+	}
+	if strings.Count(css, "content: \"Narecord Plugin\"") < 1 {
+		t.Fatal("expected CSS content label Narecord Plugin")
+	}
+}
+
+func TestDenCSSDoesNotApplyOneDenCoatToEveryPluginCard(t *testing.T) {
+	css := denCSS()
+	begin := strings.Index(css, "/* narecord-plugin-cards: shared badge/label")
+	end := strings.Index(css, "/* narecord-plugin-cards: per-plugin looks */")
+	if begin < 0 || end < 0 || end <= begin {
+		t.Fatal("missing shared vs per-plugin markers; unique looks cannot be checked")
+	}
+	shared := css[begin:end]
+	unique := css[end:]
+	if !strings.Contains(shared, `alt="User"`) || !strings.Contains(shared, "Narecord Plugin") {
+		t.Fatal("shared userplugin block should kill the puzzle and label Narecord Plugin")
+	}
+	if strings.Contains(shared, "linear-gradient(135deg, rgb(108 122 86") {
+		t.Fatal("shared userplugin card rule must not paint every card with den moss/rose")
+	}
+	if strings.Contains(shared, "url(\"data:image/webp") {
+		t.Fatal("shared userplugin card rule must not stamp Narehate/Mitty on every card")
+	}
+	if !strings.Contains(unique, "#7ec8e3") {
+		t.Fatal("Abyss card should use layer cyan, not den moss")
+	}
+	if !strings.Contains(unique, "#f4ead8") || !strings.Contains(unique, "#c45c4a") {
+		t.Fatal("NareNotes card should look like a notebook (cream paper + spine)")
+	}
+	if !strings.Contains(unique, "Nanachi hideout look.") {
+		t.Fatal("Hideout is the card that may use den portraits")
+	}
+}
+
+func TestDenCSSDoesNotAsarSwapUserPluginString(t *testing.T) {
+	if len("User Plugin") == len("Narecord Plugin") {
+		t.Fatal("those labels are not equal length; do not asar-swap them")
+	}
+	src, err := os.ReadFile("den.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(src, []byte("User Plugin")) {
+		t.Fatal("den.go must not asar-swap User Plugin; CSS/content is the inject")
 	}
 }
 
@@ -131,6 +202,9 @@ func TestInstallDenIntoWritesThemeQuickCSSAndSettings(t *testing.T) {
 	if !strings.Contains(string(theme), "data:image/webp;base64,") {
 		t.Fatal("theme missing portraits")
 	}
+	if !strings.Contains(string(theme), "Narecord Plugin") || !strings.Contains(string(theme), "Field notebook") {
+		t.Fatal("theme missing Narecord plugin cards")
+	}
 
 	quick, err := os.ReadFile(path.Join(root, "settings", "quickCss.css"))
 	if err != nil {
@@ -141,6 +215,12 @@ func TestInstallDenIntoWritesThemeQuickCSSAndSettings(t *testing.T) {
 	}
 	if !strings.Contains(string(quick), "Narecord Toolbox") || !strings.Contains(string(quick), "vc-toolbox-btn") {
 		t.Fatalf("quickCss missing toolbox den: %s", quick)
+	}
+	if !strings.Contains(string(quick), "Narecord Plugin") || !strings.Contains(string(quick), `alt="User"`) {
+		t.Fatalf("quickCss missing Narecord plugin cards: %s", quick)
+	}
+	if !strings.Contains(string(quick), "Field notebook") || !strings.Contains(string(quick), "Layers, relics") {
+		t.Fatalf("quickCss missing per-plugin card looks: %s", quick)
 	}
 
 	settings, err := os.ReadFile(path.Join(root, "settings", "settings.json"))
