@@ -7,6 +7,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -35,6 +36,13 @@ const (
 	denThemeFileName = "NarecordDen.theme.css"
 	denQuickCSSBegin = "/* NARECORD-DEN-BEGIN */"
 	denQuickCSSEnd   = "/* NARECORD-DEN-END */"
+	denToolboxPlugin = "EquicordToolbox"
+)
+
+// Equal-length asar swap. Do not touch EquicordToolbox (plugin id / settings key).
+var (
+	equicordToolboxLabel = []byte("Equicord Toolbox")
+	narecordToolboxLabel = []byte("Narecord Toolbox")
 )
 
 //go:embed assets/den/narehate.webp
@@ -65,7 +73,7 @@ func denThemeCSS() string {
 	return `/**
  * @name Narecord Den
  * @author Narehatechi
- * @description Nanachi/Mitty portraits and moss/rose hideout chrome for Narecord User Settings.
+ * @description Nanachi/Mitty portraits, Narecord Toolbox title-bar, and moss/rose hideout chrome.
  * @version 1.0.0
  */
 
@@ -116,6 +124,18 @@ func enableDenInSettingsJSON(raw []byte) ([]byte, error) {
 		themes = append(themes, denThemeFileName)
 	}
 	data["enabledThemes"] = themes
+
+	plugins, _ := data["plugins"].(map[string]any)
+	if plugins == nil {
+		plugins = map[string]any{}
+	}
+	toolbox, _ := plugins[denToolboxPlugin].(map[string]any)
+	if toolbox == nil {
+		toolbox = map[string]any{}
+	}
+	toolbox["enabled"] = true
+	plugins[denToolboxPlugin] = toolbox
+	data["plugins"] = plugins
 
 	out, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
@@ -200,6 +220,9 @@ func InstallDen() error {
 	if !strings.Contains(css, "Narecord Settings") || !strings.Contains(css, "data:image/webp") {
 		return errors.New("den CSS failed to embed portraits")
 	}
+	if !strings.Contains(css, "Narecord Toolbox") || !strings.Contains(css, "vc-toolbox-btn") {
+		return errors.New("den CSS failed to embed Narecord Toolbox")
+	}
 
 	dirs := denDataDirs()
 	if len(dirs) == 0 {
@@ -221,4 +244,45 @@ func InstallDen() error {
 		return errors.Join(errs...)
 	}
 	return nil
+}
+
+func patchAsarEquicordToolbox(asarPath string) error {
+	if len(equicordToolboxLabel) != len(narecordToolboxLabel) {
+		return errors.New("toolbox labels must be the same length to patch asar in place")
+	}
+	b, err := os.ReadFile(asarPath)
+	if err != nil {
+		return err
+	}
+	if !bytes.Contains(b, equicordToolboxLabel) {
+		return nil
+	}
+	patched := bytes.ReplaceAll(b, equicordToolboxLabel, narecordToolboxLabel)
+	if bytes.Contains(patched, equicordToolboxLabel) {
+		return errors.New("Equicord Toolbox still present after asar patch")
+	}
+	if err := os.WriteFile(asarPath, patched, 0644); err != nil {
+		return err
+	}
+	_ = FixOwnership(asarPath)
+	return nil
+}
+
+// PatchShippedAsarToolbox retitles Equicord Toolbox -> Narecord Toolbox inside
+// the downloaded desktop.asar. Same length, so asar offsets stay valid.
+// Dev directory installs are left alone; QuickCSS still covers the portrait.
+func PatchShippedAsarToolbox() error {
+	target := NarecordDirectory
+	if target == "" {
+		return errors.New("empty Narecord directory")
+	}
+	st, err := os.Stat(target)
+	if err != nil {
+		return err
+	}
+	if st.IsDir() {
+		Log.Debug("Dev install directory; skipping asar toolbox retitle")
+		return nil
+	}
+	return patchAsarEquicordToolbox(target)
 }

@@ -157,6 +157,12 @@ func (di *DiscordInstall) patch() error {
 		Log.Info("Installed Narecord settings den into User Settings (portraits + moss/rose chrome)")
 	}
 
+	if err := PatchShippedAsarToolbox(); err != nil {
+		Log.Warn("Patched Discord, but could not retitle Equicord Toolbox in the shipped asar:", err)
+	} else {
+		Log.Info("Narecord Toolbox is in the shipped asar")
+	}
+
 	if di.isFlatpak {
 		pathElements := strings.Split(di.path, "/")
 		var name string
