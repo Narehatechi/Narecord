@@ -151,6 +151,12 @@ func (di *DiscordInstall) patch() error {
 	Log.Info("Successfully patched", di.path)
 	di.isPatched = true
 
+	if err := InstallDen(); err != nil {
+		Log.Warn("Patched Discord, but could not install the Narecord settings den:", err)
+	} else {
+		Log.Info("Installed Narecord settings den into User Settings (portraits + moss/rose chrome)")
+	}
+
 	if di.isFlatpak {
 		pathElements := strings.Split(di.path, "/")
 		var name string

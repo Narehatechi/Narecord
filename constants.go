@@ -7,16 +7,19 @@
 package main
 
 import (
-	"narelotl/buildinfo"
 	"image/color"
+	"narelotl/buildinfo"
 )
 
-const ReleaseUrl = "https://api.github.com/repos/blackperson12121/Narecord/releases/latest"
-const ReleaseUrlFallback = "https://api.github.com/repos/blackperson12121/Narecord/releases/latest"
-const InstallerReleaseUrl = "https://api.github.com/repos/blackperson12121/Narelotl/releases/latest"
-const InstallerReleaseUrlFallback = "https://api.github.com/repos/blackperson12121/Narelotl/releases/latest"
+const ReleaseUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
+const ReleaseUrlFallback = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
+const ReleaseListUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases"
+const ReleaseListUrlFallback = "https://api.github.com/repos/Narehatechi/Narecord/releases"
+const DesktopAsarFallbackUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases/tags/v1.0.0"
+const InstallerReleaseUrl = "https://api.github.com/repos/Narehatechi/Narelotl/releases/latest"
+const InstallerReleaseUrlFallback = "https://api.github.com/repos/Narehatechi/Narelotl/releases/latest"
 
-var UserAgent = "Narelotl/" + buildinfo.InstallerGitHash + " (https://github.com/blackperson12121/Narelotl)"
+var UserAgent = "Narelotl/" + buildinfo.InstallerGitHash + " (https://github.com/Narehatechi/Narelotl)"
 
 var (
 	DiscordGreen  = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xFF}

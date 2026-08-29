@@ -11,10 +11,10 @@ package main
 import (
 	"bytes"
 	_ "embed"
-	"narelotl/buildinfo"
 	"errors"
 	"image"
 	"image/color"
+	"narelotl/buildinfo"
 
 	g "github.com/AllenDang/giu"
 	"github.com/AllenDang/imgui-go"
@@ -575,7 +575,8 @@ func renderInstaller() g.Widget {
 		),
 
 		InfoModal("#patched", "Successfully Patched", "If Discord is still open, fully close it first.\n"+
-			"Then, start it and verify Narecord installed successfully by looking for its category in Discord Settings"),
+			"Then start it and open User Settings. You should see Narecord Settings with a Nanachi portrait\n"+
+			"(not an Equicord gear), a Mitty portrait on Plugins, and a den banner on the Narecord page."),
 		InfoModal("#unpatched", "Successfully Unpatched", "If Discord is still open, fully close it first. Then start it again, it should be back to stock!"),
 		InfoModal("#scuffed-install", "Hold On!", "You have a broken Discord Install.\n"+
 			"Sometimes Discord decides to install to the wrong location for some reason!\n"+
