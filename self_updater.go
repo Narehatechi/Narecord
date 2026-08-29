@@ -46,7 +46,7 @@ func init() {
 }
 
 func GetInstallerDownloadLink() string {
-	const BaseUrl = "https://github.com/blackperson12121/Narelotl/releases/latest/download/"
+	const BaseUrl = "https://github.com/Narehatechi/Narelotl/releases/latest/download/"
 	switch runtime.GOOS {
 	case "windows":
 		filename := Ternary(buildinfo.UiType == buildinfo.UiTypeCli, "NarelotlCli.exe", "Narelotl.exe")

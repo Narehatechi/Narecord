@@ -1,4 +1,4 @@
-$link = "https://github.com/blackperson12121/Narelotl/releases/latest/download/NarelotlCli.exe"
+$link = "https://github.com/Narehatechi/Narelotl/releases/latest/download/NarelotlCli.exe"
 
 $outfile = "$env:TEMP\NarelotlCli.exe"
 

@@ -1,0 +1,142 @@
+/*
+ * Narecord settings den — applied by Narelotl after Install / Reinstall.
+ * Targets Equicord's injected settings layout keys (equicord_section / equicord_main /
+ * equicord_plugins). Plugin-origin filters and badges are left alone.
+ */
+
+.nr-den-pic {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1.5px #6c7a56, 0 0 8px rgb(139 58 68 / 40%);
+}
+
+/* Section header: Equicord Settings -> Narecord Settings */
+[data-item-id="equicord_section"],
+[data-list-item-id="equicord_section"],
+[data-list-item-id$="-equicord_section"],
+[data-list-item-id$="_equicord_section"] {
+    color: #c5d0b4 !important;
+    letter-spacing: 0.06em;
+    font-size: 0 !important;
+}
+
+[data-item-id="equicord_section"]::after,
+[data-list-item-id="equicord_section"]::after,
+[data-list-item-id$="-equicord_section"]::after,
+[data-list-item-id$="_equicord_section"]::after {
+    content: "Narecord Settings";
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #c5d0b4;
+}
+
+/* First row: Nanachi/Narehate portrait + Narecord (was Equicord gear) */
+[data-item-id="equicord_main"] svg,
+[data-list-item-id="equicord_main"] svg,
+[data-list-item-id$="-equicord_main"] svg,
+[data-list-item-id$="_equicord_main"] svg {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px;
+    min-height: 20px;
+    background: url("__NAREHATE__") center / cover no-repeat !important;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px #6c7a56, 0 0 8px rgb(139 58 68 / 40%);
+    overflow: hidden !important;
+}
+
+[data-item-id="equicord_main"] svg *,
+[data-list-item-id="equicord_main"] svg *,
+[data-list-item-id$="-equicord_main"] svg *,
+[data-list-item-id$="_equicord_main"] svg * {
+    opacity: 0 !important;
+    fill: transparent !important;
+    stroke: transparent !important;
+}
+
+[data-item-id="equicord_main"],
+[data-list-item-id="equicord_main"],
+[data-list-item-id$="-equicord_main"],
+[data-list-item-id$="_equicord_main"] {
+    font-size: 0 !important;
+}
+
+[data-item-id="equicord_main"]::after,
+[data-list-item-id="equicord_main"]::after,
+[data-list-item-id$="-equicord_main"]::after,
+[data-list-item-id$="_equicord_main"]::after {
+    content: "Narecord";
+    font-size: 16px;
+    font-weight: 500;
+    margin-left: 4px;
+    color: inherit;
+}
+
+/* Plugins row: Mitty/Narehate portrait; keep the Plugins label */
+[data-item-id="equicord_plugins"] svg,
+[data-list-item-id="equicord_plugins"] svg,
+[data-list-item-id$="-equicord_plugins"] svg,
+[data-list-item-id$="_equicord_plugins"] svg {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px;
+    min-height: 20px;
+    background: url("__MITTY__") center / cover no-repeat !important;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px #6c7a56, 0 0 8px rgb(139 58 68 / 40%);
+    overflow: hidden !important;
+}
+
+[data-item-id="equicord_plugins"] svg *,
+[data-list-item-id="equicord_plugins"] svg *,
+[data-list-item-id$="-equicord_plugins"] svg *,
+[data-list-item-id$="_equicord_plugins"] svg * {
+    opacity: 0 !important;
+    fill: transparent !important;
+    stroke: transparent !important;
+}
+
+/* Moss/rose selected-row chrome for the Equicord/Narecord settings den */
+[aria-selected="true"][data-item-id^="equicord_"]:not([data-item-id="equicord_section"]),
+[aria-current="page"][data-item-id^="equicord_"]:not([data-item-id="equicord_section"]),
+[aria-selected="true"][data-list-item-id*="equicord_"]:not([data-list-item-id*="equicord_section"]),
+[aria-current="page"][data-list-item-id*="equicord_"]:not([data-list-item-id*="equicord_section"]) {
+    background: linear-gradient(90deg, rgb(108 122 86 / 32%), rgb(139 58 68 / 14%)) !important;
+    box-shadow: inset 3px 0 0 #8b3a44 !important;
+    border-radius: 8px;
+}
+
+/* Den banner on the Equicord/Narecord settings page (SpecialCard marks that tab) */
+.vc-settings-tab:has(.vc-special-card) {
+    --nr-den-bark: #1a1713;
+    --nr-den-cream: #e8dcc6;
+    --nr-den-sage: #6c7a56;
+    --nr-den-rose: #8b3a44;
+}
+
+.vc-settings-tab:has(.vc-special-card)::before {
+    content: "Narecord Settings\AThe Den\ANnaa~ This hideout is Narecord, a Nanachi Equicord fork. Equicord and Vencord plugins still live here.";
+    white-space: pre-wrap;
+    display: block;
+    box-sizing: border-box;
+    min-height: 104px;
+    padding: 16px 18px 16px 106px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    color: #e8dcc6;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.45;
+    background:
+        url("__NAREHATE_LG__") 18px center / 72px 72px no-repeat,
+        linear-gradient(135deg, rgb(108 122 86 / 24%), rgb(26 23 19 / 90%)),
+        #1a1713;
+    border: 1px solid #3a3328;
+    box-shadow: inset 0 0 0 1px rgb(197 208 180 / 8%), 0 0 0 2px rgb(108 122 86 / 25%);
+}
