@@ -16,10 +16,10 @@ const ReleaseUrlFallback = "https://api.github.com/repos/Narehatechi/Narecord/re
 const ReleaseListUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases"
 const ReleaseListUrlFallback = "https://api.github.com/repos/Narehatechi/Narecord/releases"
 const DesktopAsarFallbackUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases/tags/v1.0.0"
-const InstallerReleaseUrl = "https://api.github.com/repos/Narehatechi/Narelotl/releases/latest"
-const InstallerReleaseUrlFallback = "https://api.github.com/repos/Narehatechi/Narelotl/releases/latest"
+const InstallerReleaseUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
+const InstallerReleaseUrlFallback = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
 
-var UserAgent = "Narelotl/" + buildinfo.InstallerGitHash + " (https://github.com/Narehatechi/Narelotl)"
+var UserAgent = "Narelotl/" + buildinfo.InstallerGitHash + " (https://github.com/Narehatechi/Narecord)"
 
 var (
 	DiscordGreen  = color.RGBA{R: 0x2D, G: 0x7C, B: 0x46, A: 0xFF}
