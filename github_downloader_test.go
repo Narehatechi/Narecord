@@ -98,6 +98,9 @@ func TestNarehatechiURLs(t *testing.T) {
 		if strings.Contains(u, "blackperson12121") {
 			t.Errorf("leftover GitHub owner in %s", u)
 		}
+		if strings.Contains(u, "Narehatechi/Narelotl") {
+			t.Errorf("leftover Narelotl repo path in %s", u)
+		}
 		if !strings.Contains(u, "Narehatechi") {
 			t.Errorf("expected Narehatechi in %s", u)
 		}

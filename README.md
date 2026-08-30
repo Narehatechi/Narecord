@@ -10,18 +10,18 @@ After Install, Discord User Settings should show **Narecord Settings** with a Na
 
 Windows
 
-- [GUI](https://github.com/Narehatechi/Narelotl/releases/latest/download/Narelotl.exe)
-- [CLI](https://github.com/Narehatechi/Narelotl/releases/latest/download/NarelotlCli.exe)
+- [GUI](https://github.com/Narehatechi/Narecord/releases/latest/download/Narelotl.exe)
+- [CLI](https://github.com/Narehatechi/Narecord/releases/latest/download/NarelotlCli.exe)
 
 MacOS
 
-- [X64 GUI](https://github.com/Narehatechi/Narelotl/releases/latest/download/Narelotl-darwin-x64.zip)
-- [ARM64 GUI](https://github.com/Narehatechi/Narelotl/releases/latest/download/Narelotl-darwin-arm64.zip)
+- [X64 GUI](https://github.com/Narehatechi/Narecord/releases/latest/download/Narelotl-darwin-x64.zip)
+- [ARM64 GUI](https://github.com/Narehatechi/Narecord/releases/latest/download/Narelotl-darwin-arm64.zip)
 
 Linux
 
-- [GUI](https://github.com/Narehatechi/Narelotl/releases/latest/download/Narelotl-x11)
-- [CLI](https://github.com/Narehatechi/Narelotl/releases/latest/download/NarelotlCli-Linux)
+- [GUI](https://github.com/Narehatechi/Narecord/releases/latest/download/Narelotl-x11)
+- [CLI](https://github.com/Narehatechi/Narecord/releases/latest/download/NarelotlCli-Linux)
 
 ## Building from source
 
@@ -84,4 +84,4 @@ go build --tags cli
 ```
 
 You might want to pass some flags to this command to get a better build.
-See [the GitHub workflow](https://github.com/Narehatechi/Narelotl/blob/main/.github/workflows/release.yml) for what flags I pass or if you want more precise instructions
+See [the GitHub workflow](https://github.com/Narehatechi/Narecord/blob/main/.github/workflows/release.yml) for what flags I pass or if you want more precise instructions
