@@ -13,6 +13,8 @@ Windows
 - [GUI](https://github.com/Narehatechi/Narecord/releases/latest/download/Narelotl.exe)
 - [CLI](https://github.com/Narehatechi/Narecord/releases/latest/download/NarelotlCli.exe)
 
+Windows may show "Windows protected your PC" / SmartScreen because Narelotl.exe is unsigned. That warning is harmless — click More info, then Run anyway. Signing would cost money; we are not signing Windows builds.
+
 MacOS
 
 - [X64 GUI](https://github.com/Narehatechi/Narecord/releases/latest/download/Narelotl-darwin-x64.zip)
