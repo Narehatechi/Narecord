@@ -37,9 +37,71 @@ func TestDenCSSEmbedsPortraitsAndDenCopy(t *testing.T) {
 			t.Errorf("den CSS missing %q", needle)
 		}
 	}
-	if strings.Count(css, "data:image/webp;base64,") < 3 {
-		t.Fatalf("expected 3 embedded portraits, got %d", strings.Count(css, "data:image/webp;base64,"))
+	if strings.Count(css, "data:image/webp;base64,") < 5 {
+		t.Fatalf("expected 5 embedded portraits (old + circle), got %d", strings.Count(css, "data:image/webp;base64,"))
 	}
+}
+
+func TestDenCSSToolboxAndSettingsUseCirclePortraitsNotPluginCards(t *testing.T) {
+	css := denCSS()
+	oldURI := dataURI("image/webp", denNarehateWebp)
+	oldLgURI := dataURI("image/webp", denNarehateLgWebp)
+	circleURI := dataURI("image/webp", denNarehateCircleWebp)
+	circleLgURI := dataURI("image/webp", denNarehateCircleLgWebp)
+
+	for _, leftover := range []string{
+		"__NAREHATE_CIRCLE_LG__",
+		"__NAREHATE_CIRCLE__",
+		"__NAREHATE_LG__",
+		"__NAREHATE__",
+		"__MITTY__",
+	} {
+		if strings.Contains(css, leftover) {
+			t.Errorf("den CSS still has placeholder %q", leftover)
+		}
+	}
+
+	split := strings.Index(css, "/* narecord-plugin-cards:")
+	if split < 0 {
+		t.Fatal("missing plugin-cards marker")
+	}
+	chrome, cards := css[:split], css[split:]
+
+	if !strings.Contains(chrome, circleURI) {
+		t.Fatal("toolbox/settings chrome must use narehate-circle.webp")
+	}
+	if !strings.Contains(chrome, circleLgURI) {
+		t.Fatal("toolbox header / den banner must use narehate-circle-lg.webp")
+	}
+	if strings.Contains(chrome, oldURI) || strings.Contains(chrome, oldLgURI) {
+		t.Fatal("toolbox/settings chrome must not keep the old narehate portraits")
+	}
+
+	if !strings.Contains(cards, oldURI) {
+		t.Fatal("plugin cards must keep the old narehate.webp")
+	}
+	if !strings.Contains(cards, oldLgURI) {
+		t.Fatal("Hideout card must keep the old narehate-lg.webp")
+	}
+	if strings.Contains(cards, circleURI) || strings.Contains(cards, circleLgURI) {
+		t.Fatal("plugin cards must not use the new circle portraits")
+	}
+
+	if !bytes.Equal(denNarehateWebp, mustReadFile(t, "assets/den/narehate.webp")) {
+		t.Fatal("narehate.webp bytes changed")
+	}
+	if !bytes.Equal(denNarehateLgWebp, mustReadFile(t, "assets/den/narehate-lg.webp")) {
+		t.Fatal("narehate-lg.webp bytes changed")
+	}
+}
+
+func mustReadFile(t *testing.T, name string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
 }
 
 func TestDenCSSLeavesEquicordPluginOriginAlone(t *testing.T) {
