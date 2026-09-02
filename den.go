@@ -54,6 +54,12 @@ var denMittyWebp []byte
 //go:embed assets/den/narehate-lg.webp
 var denNarehateLgWebp []byte
 
+//go:embed assets/den/narehate-circle.webp
+var denNarehateCircleWebp []byte
+
+//go:embed assets/den/narehate-circle-lg.webp
+var denNarehateCircleLgWebp []byte
+
 //go:embed assets/den/narecord-den.css
 var denCSSTemplate string
 
@@ -62,10 +68,13 @@ func dataURI(mime string, b []byte) string {
 }
 
 func denCSS() string {
+	// Longer tokens first so __NAREHATE__ cannot eat __NAREHATE_CIRCLE__ / _LG__.
 	return strings.NewReplacer(
+		"__NAREHATE_CIRCLE_LG__", dataURI("image/webp", denNarehateCircleLgWebp),
+		"__NAREHATE_CIRCLE__", dataURI("image/webp", denNarehateCircleWebp),
+		"__NAREHATE_LG__", dataURI("image/webp", denNarehateLgWebp),
 		"__NAREHATE__", dataURI("image/webp", denNarehateWebp),
 		"__MITTY__", dataURI("image/webp", denMittyWebp),
-		"__NAREHATE_LG__", dataURI("image/webp", denNarehateLgWebp),
 	).Replace(denCSSTemplate)
 }
 
