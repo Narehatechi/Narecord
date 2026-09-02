@@ -11,11 +11,14 @@ import (
 	"narelotl/buildinfo"
 )
 
-const ReleaseUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
-const ReleaseUrlFallback = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
-const ReleaseListUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases"
-const ReleaseListUrlFallback = "https://api.github.com/repos/Narehatechi/Narecord/releases"
-const DesktopAsarFallbackUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases/tags/v1.0.0"
+// desktop.asar is published by Equicord. Narecord releases only ship Narelotl binaries.
+const ReleaseUrl = "https://api.github.com/repos/Equicord/Equicord/releases/latest"
+const ReleaseUrlFallback = "https://api.github.com/repos/Equicord/Equicord/releases/latest"
+const ReleaseListUrl = "https://api.github.com/repos/Equicord/Equicord/releases"
+const ReleaseListUrlFallback = "https://api.github.com/repos/Equicord/Equicord/releases"
+const DesktopAsarFallbackUrl = "https://api.github.com/repos/Equicord/Equicord/releases/latest"
+
+// Installer self-update stays on Narehatechi/Narecord (Narelotl.exe and friends).
 const InstallerReleaseUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
 const InstallerReleaseUrlFallback = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
 
