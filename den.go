@@ -27,7 +27,8 @@ import (
 //
 //	<BaseDir>/settings/quickCss.css          Narecord config (installer BaseDir)
 //	<BaseDir>/themes/NarecordDen.theme.css
-//	<BaseDir>/settings/settings.json         enables QuickCSS + this theme
+//	<BaseDir>/settings/settings.json         enables QuickCSS + this theme + narePerf
+//	<BaseDir>/userplugins/narePerf/index.ts  first-party den userplugin source
 //
 // The shipped desktop.asar is still Equicord-looking and reads Equicord's DATA_DIR
 // (EQUICORD_USER_DATA_DIR, else <Discord userData>/../Equicord — typically
@@ -100,17 +101,7 @@ func denThemeCSS() string {
 }
 
 func mergeQuickCSS(existing, den string) string {
-	block := denQuickCSSBegin + "\n" + den + "\n" + denQuickCSSEnd
-	start := strings.Index(existing, denQuickCSSBegin)
-	end := strings.Index(existing, denQuickCSSEnd)
-	if start >= 0 && end > start {
-		return existing[:start] + block + existing[end+len(denQuickCSSEnd):]
-	}
-	existing = strings.TrimRight(existing, "\n")
-	if existing == "" {
-		return block + "\n"
-	}
-	return existing + "\n\n" + block + "\n"
+	return mergeMarkedCSS(existing, denQuickCSSBegin, denQuickCSSEnd, den)
 }
 
 func enableDenInSettingsJSON(raw []byte) ([]byte, error) {
@@ -155,6 +146,7 @@ func enableDenInSettingsJSON(raw []byte) ([]byte, error) {
 	toolbox["enabled"] = true
 	plugins[denToolboxPlugin] = toolbox
 	data["plugins"] = plugins
+	enableNarePerfInSettings(data)
 
 	out, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
@@ -200,12 +192,18 @@ func installDenInto(root string) error {
 		return err
 	}
 
+	if err := writeNarePerfUserplugin(root); err != nil {
+		return err
+	}
+
 	quickPath := path.Join(settingsDir, "quickCss.css")
 	existingQuick, err := os.ReadFile(quickPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	if err := os.WriteFile(quickPath, []byte(mergeQuickCSS(string(existingQuick), css)), 0644); err != nil {
+	quick := mergeQuickCSS(string(existingQuick), css)
+	quick = mergeNarePerfQuickCSS(quick)
+	if err := os.WriteFile(quickPath, []byte(quick), 0644); err != nil {
 		return err
 	}
 
@@ -242,6 +240,12 @@ func InstallDen() error {
 	if !strings.Contains(css, "Narecord Plugin") || !strings.Contains(css, `alt="User"`) {
 		return errors.New("den CSS failed to embed Narecord plugin cards")
 	}
+	if !strings.Contains(css, narePerfCardHook) {
+		return errors.New("den CSS failed to embed narePerf plugin card")
+	}
+	if err := narePerfPluginValid(); err != nil {
+		return err
+	}
 
 	dirs := denDataDirs()
 	if len(dirs) == 0 {
@@ -262,6 +266,7 @@ func InstallDen() error {
 	if ok == 0 {
 		return errors.Join(errs...)
 	}
+	installNarePerfSources()
 	return nil
 }
 

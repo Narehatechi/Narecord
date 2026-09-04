@@ -10,6 +10,8 @@
  *
  * Per-card hooks: AddonCard puts plugin.description on .vc-addon-note[title].
  * Userplugin badge is img.vc-plugins-source[alt="User"] (userplugin.png).
+ * narePerf uses the "Quiet den: strips Discord fluff" hook and its own
+ * steel/chevron card — not the shared puzzle mark.
  */
 
 .nr-den-pic {
@@ -468,6 +470,43 @@
         ),
         linear-gradient(90deg, #c45c4a 0 4px, #f4ead8 4px);
     box-shadow: 1px 1px 0 #c4b494;
+}
+
+/* narePerf — stripped steel instrument, moss pinstripe, angular chevron.
+ * Not a puzzle sticker, not a portrait, not Incinerator's glow rail. */
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Quiet den: strips Discord fluff"]) {
+    --nr-plugin-label: #b8d48a;
+    background:
+        linear-gradient(90deg, #8fbf4a 0 3px, transparent 3px),
+        repeating-linear-gradient(
+            90deg,
+            transparent 0 11px,
+            rgb(143 191 74 / 10%) 11px 12px
+        ),
+        linear-gradient(180deg, #161a16, #0c0e0c) !important;
+    border: 1px solid #3d4a32 !important;
+    color: #dce8cc;
+    box-shadow: none;
+    border-radius: 2px !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Quiet den: strips Discord fluff"]) .vc-addon-note {
+    color: #b8d48a !important;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Quiet den: strips Discord fluff"]) .vc-addon-title {
+    color: #e8f4d4;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+}
+
+.vc-addon-card:has(.vc-plugins-source[alt="User"]):has(.vc-addon-note[title^="Quiet den: strips Discord fluff"]) .vc-addon-source::before {
+    width: 20px;
+    height: 20px;
+    border-radius: 0;
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+    background: #8fbf4a;
+    box-shadow: none;
 }
 
 /* NarehateBadge — Nanachi-head badge */

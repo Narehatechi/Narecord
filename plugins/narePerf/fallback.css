@@ -1,0 +1,55 @@
+/* Narecord narePerf CSS fallback for stock Equicord asar installs.
+ * Applies only while the compiled plugin is NOT running (html.nr-perf-plugin).
+ * Same fluff-first rules as plugins/narePerf/index.ts defaults. */
+
+html:not(.nr-perf-plugin) [class*="backdrop"],
+html:not(.nr-perf-plugin) [class*="layer"] [class*="focusLock"],
+html:not(.nr-perf-plugin) [class*="modal"],
+html:not(.nr-perf-plugin) [class*="popout"],
+html:not(.nr-perf-plugin) [class*="menu"],
+html:not(.nr-perf-plugin) [style*="backdrop-filter"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+html:not(.nr-perf-plugin) [class*="backdrop"] {
+    background-color: rgb(0 0 0 / 48%) !important;
+}
+
+html:not(.nr-perf-plugin),
+html:not(.nr-perf-plugin) *:not([class*="messageContent"]):not([class*="markup"]),
+html:not(.nr-perf-plugin) *:not([class*="messageContent"]):not([class*="markup"])::before,
+html:not(.nr-perf-plugin) *:not([class*="messageContent"]):not([class*="markup"])::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+}
+
+html:not(.nr-perf-plugin) [class*="acrylic"],
+html:not(.nr-perf-plugin) [class*="Acrylic"] {
+    background-color: var(--background-secondary, #2b2d31) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+html:not(.nr-perf-plugin) [class*="avatarDecoration"],
+html:not(.nr-perf-plugin) [class*="AvatarDecoration"],
+html:not(.nr-perf-plugin) [class*="profileEffect"],
+html:not(.nr-perf-plugin) [class*="ProfileEffect"],
+html:not(.nr-perf-plugin) [class*="confetti"],
+html:not(.nr-perf-plugin) [class*="Confetti"],
+html:not(.nr-perf-plugin) [class*="giftAnimation"],
+html:not(.nr-perf-plugin) [class*="GiftAnimation"],
+html:not(.nr-perf-plugin) [class*="hoverParticle"],
+html:not(.nr-perf-plugin) [class*="HoverParticle"] {
+    display: none !important;
+    animation: none !important;
+    visibility: hidden !important;
+}
+
+html:not(.nr-perf-plugin) img[class*="emoji"][src*="gif"],
+html:not(.nr-perf-plugin) [class*="lottieIcon"],
+html:not(.nr-perf-plugin) [class*="sticker"][class*="lottie"] {
+    animation: none !important;
+}
