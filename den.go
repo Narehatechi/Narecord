@@ -224,9 +224,10 @@ func enableDenInSettingsJSON(raw []byte) ([]byte, error) {
 }
 
 // mergeDenSettingsJSON deep-merges only the den / narePerf keys into existing
-// settings. It never replaces a plugins map with a 3-plugin stub. If raw is
-// empty or is the v1.1.6 installer stub, seed (typically Equicord settings)
-// is used as the base when it has more plugins.
+// settings. The plugins map is mutated in place (enable narePerf and friends);
+// it is never replaced with a new 3-plugin object. If raw is empty or is the
+// v1.1.6 installer stub, seed (typically Equicord settings) is used as the
+// base when it has more plugins.
 func mergeDenSettingsJSON(raw, seed []byte) ([]byte, error) {
 	existing, err := parseSettingsJSON(raw)
 	if err != nil {

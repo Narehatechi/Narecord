@@ -60,8 +60,9 @@ func enableNarePerfInSettings(data map[string]any) error {
 	return enableNamedPlugins(data, narePerfPluginName, bundledNoTypingPlugin)
 }
 
-// ensurePluginsMap returns the existing plugins object. It never replaces a
-// present non-object plugins value with a new map (that was the v1.1.6 wipe).
+// ensurePluginsMap returns the existing plugins object and mutates it in place.
+// It never allocates a replacement map over a present plugins value (that was
+// the v1.1.6 wipe: a 3-key stub assigned onto data["plugins"]).
 func ensurePluginsMap(data map[string]any) (map[string]any, error) {
 	raw, exists := data["plugins"]
 	if !exists || raw == nil {
@@ -76,6 +77,8 @@ func ensurePluginsMap(data map[string]any) (map[string]any, error) {
 	return m, nil
 }
 
+// enableNamedPlugins sets enabled:true on the named plugins only. The rest of
+// the plugins map is left alone; the map object itself is never replaced.
 func enableNamedPlugins(data map[string]any, names ...string) error {
 	plugins, err := ensurePluginsMap(data)
 	if err != nil {

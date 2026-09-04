@@ -136,6 +136,30 @@ func TestWriteNarePerfUserpluginAndSourceTree(t *testing.T) {
 	}
 }
 
+func TestEnableNamedPluginsLeavesExistingMapInPlace(t *testing.T) {
+	original := map[string]any{
+		"Foo": map[string]any{"enabled": true, "keep": "yes"},
+		"Bar": map[string]any{"enabled": false, "volume": 3},
+	}
+	data := map[string]any{"plugins": original}
+	if err := enableNamedPlugins(data, narePerfPluginName, bundledNoTypingPlugin); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := data["plugins"].(map[string]any)
+	got["__probe"] = true
+	if original["__probe"] != true {
+		t.Fatal("plugins map was replaced; Install must mutate the existing map")
+	}
+	if len(got) != 5 { // Foo, Bar, narePerf, NoTypingAnimation, __probe
+		t.Fatalf("plugins map rewritten: %d keys", len(got))
+	}
+	foo, _ := got["Foo"].(map[string]any)
+	bar, _ := got["Bar"].(map[string]any)
+	if foo["keep"] != "yes" || bar["volume"] != 3 || bar["enabled"] != false {
+		t.Fatalf("other plugin entries were rewritten: foo=%#v bar=%#v", foo, bar)
+	}
+}
+
 func TestEnableNarePerfInSettingsJSON(t *testing.T) {
 	data := map[string]any{
 		"plugins": map[string]any{
