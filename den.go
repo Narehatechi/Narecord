@@ -30,6 +30,7 @@ import (
 //	<BaseDir>/settings/settings.json         MERGE-ONLY: enable QuickCSS + theme + narePerf
 //	<BaseDir>/settings/settings.json.bak-before-nareperf  first-write backup
 //	<BaseDir>/userplugins/narePerf/index.ts  first-party den userplugin source
+//	<BaseDir>/userplugins/{Abyss,...}/       den sources for source-tree builds (stock asar ignores these)
 //
 // settings.json is never replaced. Missing/stub Narecord settings are seeded from
 // Equicord (or the richest sibling) then merged. QuickCSS uses
@@ -140,7 +141,7 @@ func isInstallerManagedPlugin(name string) bool {
 	case narePerfPluginName, bundledNoTypingPlugin, denToolboxPlugin:
 		return true
 	default:
-		return false
+		return isDenUserpluginName(name)
 	}
 }
 
@@ -281,6 +282,9 @@ func mergeDenSettingsJSON(raw, seed []byte) ([]byte, error) {
 	if err := enableNarePerfInSettings(data); err != nil {
 		return nil, err
 	}
+	if err := enableDenUserpluginsInSettings(data); err != nil {
+		return nil, err
+	}
 
 	out, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
@@ -351,6 +355,9 @@ func installDenIntoWithSeed(root string, seed []byte) error {
 	if err := writeNarePerfUserplugin(root); err != nil {
 		return err
 	}
+	if err := writeDenUserplugins(root); err != nil {
+		return err
+	}
 
 	quickPath := path.Join(settingsDir, "quickCss.css")
 	existingQuick, err := os.ReadFile(quickPath)
@@ -394,6 +401,9 @@ func InstallDen() error {
 	if err := narePerfPluginValid(); err != nil {
 		return err
 	}
+	if err := denUserpluginsValid(); err != nil {
+		return err
+	}
 
 	dirs := denDataDirs()
 	if len(dirs) == 0 {
@@ -416,6 +426,7 @@ func InstallDen() error {
 		return errors.Join(errs...)
 	}
 	installNarePerfSources()
+	installDenUserpluginSources()
 	return nil
 }
 
