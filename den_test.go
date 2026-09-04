@@ -238,6 +238,12 @@ func TestEnableDenInSettingsJSONPreservesOtherKeys(t *testing.T) {
 	if np["enabled"] != true {
 		t.Fatal("narePerf should be enabled so the den ships the perf plugin")
 	}
+	for _, name := range denUserpluginNames {
+		p, _ := plugins[name].(map[string]any)
+		if p["enabled"] != true {
+			t.Fatalf("%s should be enabled so Install ships the den userplugin", name)
+		}
+	}
 	if data["windowsMaterial"] != "none" {
 		t.Fatal("windowsMaterial should be none so acrylic/vibrancy is stripped")
 	}
@@ -641,6 +647,16 @@ func TestInstallDenIntoWritesThemeQuickCSSAndSettings(t *testing.T) {
 	}
 	if !strings.Contains(string(pluginSrc), "definePlugin") || !strings.Contains(string(pluginSrc), narePerfCardHook) {
 		t.Fatalf("userplugin source incomplete: %s", pluginSrc)
+	}
+	abyss, err := os.ReadFile(path.Join(root, "userplugins", "Abyss", "index.tsx"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(abyss), "definePlugin") || !strings.Contains(string(abyss), `name: "Abyss"`) {
+		t.Fatalf("Abyss userplugin missing: %s", abyss)
+	}
+	if !ExistsFile(path.Join(root, "userplugins", "Hideout", "style.css")) {
+		t.Fatal("Hideout style.css was not written")
 	}
 }
 
