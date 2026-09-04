@@ -127,6 +127,7 @@ func TestDenCSSRetitlesNarecordUserpluginCards(t *testing.T) {
 		"Nanachi hideout look.",
 		"Charged incinerator rail",
 		"Small Mitty flair",
+		"Quiet den: strips Discord fluff",
 		"pointer-events: none",
 	} {
 		if !strings.Contains(css, needle) {
@@ -164,6 +165,12 @@ func TestDenCSSDoesNotApplyOneDenCoatToEveryPluginCard(t *testing.T) {
 	}
 	if !strings.Contains(unique, "Nanachi hideout look.") {
 		t.Fatal("Hideout is the card that may use den portraits")
+	}
+	if !strings.Contains(unique, "Quiet den: strips Discord fluff") {
+		t.Fatal("narePerf card hook missing from per-plugin looks")
+	}
+	if !strings.Contains(unique, "clip-path: polygon(0 0, 100% 50%, 0 100%)") {
+		t.Fatal("narePerf card must use an angular chevron, not a puzzle/circle sticker")
 	}
 }
 
@@ -225,6 +232,13 @@ func TestEnableDenInSettingsJSONPreservesOtherKeys(t *testing.T) {
 	tb, _ := plugins[denToolboxPlugin].(map[string]any)
 	if tb["enabled"] != true {
 		t.Fatal("EquicordToolbox should be enabled so the title-bar toolbox ships")
+	}
+	np, _ := plugins[narePerfPluginName].(map[string]any)
+	if np["enabled"] != true {
+		t.Fatal("narePerf should be enabled so the den ships the perf plugin")
+	}
+	if data["windowsMaterial"] != "none" {
+		t.Fatal("windowsMaterial should be none so acrylic/vibrancy is stripped")
 	}
 
 	out2, err := enableDenInSettingsJSON(out)
@@ -295,6 +309,19 @@ func TestInstallDenIntoWritesThemeQuickCSSAndSettings(t *testing.T) {
 	}
 	if !strings.Contains(string(settings), denToolboxPlugin) {
 		t.Fatalf("settings.json did not enable toolbox plugin: %s", settings)
+	}
+	if !strings.Contains(string(settings), narePerfPluginName) || !strings.Contains(string(quick), narePerfQuickCSSBegin) {
+		t.Fatalf("narePerf was not shipped: settings=%s quick=%s", settings, quick)
+	}
+	if !strings.Contains(string(quick), "html:not(.nr-perf-plugin)") || !strings.Contains(string(quick), "backdrop-filter: none") {
+		t.Fatalf("quickCss missing narePerf fluff-kill fallback: %s", quick)
+	}
+	pluginSrc, err := os.ReadFile(path.Join(root, "userplugins", narePerfPluginName, narePerfPluginFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(pluginSrc), "definePlugin") || !strings.Contains(string(pluginSrc), narePerfCardHook) {
+		t.Fatalf("userplugin source incomplete: %s", pluginSrc)
 	}
 }
 
