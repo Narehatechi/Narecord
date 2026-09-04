@@ -27,8 +27,13 @@ import (
 //
 //	<BaseDir>/settings/quickCss.css          Narecord config (installer BaseDir)
 //	<BaseDir>/themes/NarecordDen.theme.css
-//	<BaseDir>/settings/settings.json         enables QuickCSS + this theme + narePerf
+//	<BaseDir>/settings/settings.json         MERGE-ONLY: enable QuickCSS + theme + narePerf
+//	<BaseDir>/settings/settings.json.bak-before-nareperf  first-write backup
 //	<BaseDir>/userplugins/narePerf/index.ts  first-party den userplugin source
+//
+// settings.json is never replaced. Missing/stub Narecord settings are seeded from
+// Equicord (or the richest sibling) then merged. QuickCSS uses
+// NARECORD-DEN / NARECORD-NARPERF markers and replaces those blocks only.
 //
 // The shipped desktop.asar is still Equicord-looking and reads Equicord's DATA_DIR
 // (EQUICORD_USER_DATA_DIR, else <Discord userData>/../Equicord — typically
@@ -104,23 +109,158 @@ func mergeQuickCSS(existing, den string) string {
 	return mergeMarkedCSS(existing, denQuickCSSBegin, denQuickCSSEnd, den)
 }
 
-func enableDenInSettingsJSON(raw []byte) ([]byte, error) {
+var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
+
+const settingsBackupName = "settings.json.bak-before-nareperf"
+
+func parseSettingsJSON(raw []byte) (map[string]any, error) {
 	data := map[string]any{}
-	if len(strings.TrimSpace(string(raw))) > 0 {
-		if err := json.Unmarshal(raw, &data); err != nil {
-			return nil, fmt.Errorf("parse settings.json: %w", err)
+	trim := bytes.TrimSpace(bytes.TrimPrefix(raw, utf8BOM))
+	if len(trim) == 0 {
+		return data, nil
+	}
+	dec := json.NewDecoder(bytes.NewReader(trim))
+	dec.UseNumber()
+	if err := dec.Decode(&data); err != nil {
+		return nil, fmt.Errorf("parse settings.json: %w", err)
+	}
+	return data, nil
+}
+
+func settingsPluginCount(data map[string]any) int {
+	plugins, ok := data["plugins"].(map[string]any)
+	if !ok {
+		return 0
+	}
+	return len(plugins)
+}
+
+func isInstallerManagedPlugin(name string) bool {
+	switch name {
+	case narePerfPluginName, bundledNoTypingPlugin, denToolboxPlugin:
+		return true
+	default:
+		return false
+	}
+}
+
+// isSparseInstallerSettings is the v1.1.6 stub: missing plugins, or only the
+// few keys Install writes (narePerf / NoTypingAnimation / EquicordToolbox).
+func isSparseInstallerSettings(data map[string]any) bool {
+	if data == nil {
+		return true
+	}
+	raw, exists := data["plugins"]
+	if !exists || raw == nil {
+		return true
+	}
+	plugins, ok := raw.(map[string]any)
+	if !ok {
+		return false
+	}
+	if len(plugins) == 0 {
+		return true
+	}
+	for name := range plugins {
+		if !isInstallerManagedPlugin(name) {
+			return false
 		}
 	}
+	return true
+}
+
+func shouldSeedFromSibling(existing, seed map[string]any) bool {
+	if seed == nil {
+		return false
+	}
+	seedCount := settingsPluginCount(seed)
+	if seedCount == 0 {
+		return false
+	}
+	if !isSparseInstallerSettings(existing) {
+		return false
+	}
+	return seedCount > settingsPluginCount(existing)
+}
+
+func richestSettingsJSON(dirs []string) []byte {
+	var best []byte
+	bestCount := -1
+	for _, dir := range dirs {
+		raw, err := os.ReadFile(path.Join(dir, "settings", "settings.json"))
+		if err != nil {
+			continue
+		}
+		data, err := parseSettingsJSON(raw)
+		if err != nil {
+			continue
+		}
+		n := settingsPluginCount(data)
+		if n > bestCount || (n == bestCount && len(raw) > len(best)) {
+			best = raw
+			bestCount = n
+		}
+	}
+	return best
+}
+
+func backupSettingsJSON(settingsPath string, existing []byte) error {
+	if len(bytes.TrimSpace(existing)) == 0 {
+		return nil
+	}
+	bak := path.Join(path.Dir(settingsPath), settingsBackupName)
+	if ExistsFile(bak) {
+		return nil
+	}
+	if err := os.WriteFile(bak, existing, 0644); err != nil {
+		return err
+	}
+	Log.Info("Backed up", settingsPath, "to", bak)
+	return nil
+}
+
+func enableDenInSettingsJSON(raw []byte) ([]byte, error) {
+	return mergeDenSettingsJSON(raw, nil)
+}
+
+// mergeDenSettingsJSON deep-merges only the den / narePerf keys into existing
+// settings. The plugins map is mutated in place (enable narePerf and friends);
+// it is never replaced with a new 3-plugin object. If raw is empty or is the
+// v1.1.6 installer stub, seed (typically Equicord settings) is used as the
+// base when it has more plugins.
+func mergeDenSettingsJSON(raw, seed []byte) ([]byte, error) {
+	existing, err := parseSettingsJSON(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	var seedData map[string]any
+	if len(bytes.TrimSpace(bytes.TrimPrefix(seed, utf8BOM))) > 0 {
+		seedData, err = parseSettingsJSON(seed)
+		if err != nil {
+			Log.Warn("Ignoring unreadable settings seed:", err)
+			seedData = nil
+		}
+	}
+
+	data := existing
+	if shouldSeedFromSibling(existing, seedData) {
+		Log.Info("Seeding settings.json from sibling Equicord/Narecord settings (merge, not replace)")
+		data = seedData
+		for k, v := range existing {
+			if k == "plugins" {
+				continue
+			}
+			data[k] = v
+		}
+	}
+
 	data["useQuickCss"] = true
 
 	var themes []any
-	switch existing := data["enabledThemes"].(type) {
+	switch existingThemes := data["enabledThemes"].(type) {
 	case []any:
-		themes = existing
-	case nil:
-		themes = nil
-	default:
-		themes = nil
+		themes = existingThemes
 	}
 
 	found := false
@@ -135,18 +275,12 @@ func enableDenInSettingsJSON(raw []byte) ([]byte, error) {
 	}
 	data["enabledThemes"] = themes
 
-	plugins, _ := data["plugins"].(map[string]any)
-	if plugins == nil {
-		plugins = map[string]any{}
+	if err := enableNamedPlugins(data, denToolboxPlugin); err != nil {
+		return nil, err
 	}
-	toolbox, _ := plugins[denToolboxPlugin].(map[string]any)
-	if toolbox == nil {
-		toolbox = map[string]any{}
+	if err := enableNarePerfInSettings(data); err != nil {
+		return nil, err
 	}
-	toolbox["enabled"] = true
-	plugins[denToolboxPlugin] = toolbox
-	data["plugins"] = plugins
-	enableNarePerfInSettings(data)
 
 	out, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
@@ -173,7 +307,29 @@ func denDataDirs() []string {
 	return dirs
 }
 
+func writeMergedSettingsJSON(settingsPath string, seed []byte) error {
+	existingSettings, err := os.ReadFile(settingsPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if err := backupSettingsJSON(settingsPath, existingSettings); err != nil {
+		return fmt.Errorf("backup settings.json: %w", err)
+	}
+	updated, err := mergeDenSettingsJSON(existingSettings, seed)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(settingsPath, updated, 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
 func installDenInto(root string) error {
+	return installDenIntoWithSeed(root, nil)
+}
+
+func installDenIntoWithSeed(root string, seed []byte) error {
 	if root == "" {
 		return errors.New("empty den config dir")
 	}
@@ -208,15 +364,7 @@ func installDenInto(root string) error {
 	}
 
 	settingsPath := path.Join(settingsDir, "settings.json")
-	existingSettings, err := os.ReadFile(settingsPath)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-	updated, err := enableDenInSettingsJSON(existingSettings)
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(settingsPath, updated, 0644); err != nil {
+	if err := writeMergedSettingsJSON(settingsPath, seed); err != nil {
 		return err
 	}
 
@@ -252,11 +400,12 @@ func InstallDen() error {
 		return errors.New("no config dir to install the Narecord settings den into")
 	}
 
+	seed := richestSettingsJSON(dirs)
 	var errs []error
 	ok := 0
 	for _, dir := range dirs {
 		Log.Debug("Installing Narecord settings den into", dir)
-		if err := installDenInto(dir); err != nil {
+		if err := installDenIntoWithSeed(dir, seed); err != nil {
 			Log.Warn("Failed to install den into", dir, err)
 			errs = append(errs, fmt.Errorf("%s: %w", dir, err))
 			continue

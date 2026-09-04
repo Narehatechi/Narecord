@@ -21,9 +21,9 @@ import (
 // therefore:
 //  1. writes plugin source to <dataDir>/userplugins/narePerf (always)
 //  2. copies it into Equicord src/userplugins when a source tree is found
-//  3. enables narePerf + bundled NoTypingAnimation in settings.json
+//  3. MERGES narePerf + bundled NoTypingAnimation into settings.json (never replaces plugins)
 //  4. sets windowsMaterial to none
-//  5. injects fallback CSS into QuickCSS so fluff-kill works without a rebuild
+//  5. injects fallback CSS into the NARECORD-NARPERF QuickCSS block only
 const (
 	narePerfPluginName     = "narePerf"
 	narePerfPluginFile     = "index.ts"
@@ -54,26 +54,55 @@ func mergeMarkedCSS(existing, begin, end, body string) string {
 	return existing + "\n\n" + block + "\n"
 }
 
-func enableNarePerfInSettings(data map[string]any) {
+func enableNarePerfInSettings(data map[string]any) error {
 	data["windowsMaterial"] = "none"
 	data["macosVibrancyStyle"] = nil
+	return enableNamedPlugins(data, narePerfPluginName, bundledNoTypingPlugin)
+}
 
-	plugins, _ := data["plugins"].(map[string]any)
-	if plugins == nil {
-		plugins = map[string]any{}
+// ensurePluginsMap returns the existing plugins object and mutates it in place.
+// It never allocates a replacement map over a present plugins value (that was
+// the v1.1.6 wipe: a 3-key stub assigned onto data["plugins"]).
+func ensurePluginsMap(data map[string]any) (map[string]any, error) {
+	raw, exists := data["plugins"]
+	if !exists || raw == nil {
+		m := map[string]any{}
+		data["plugins"] = m
+		return m, nil
 	}
+	m, ok := raw.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("settings.json plugins is %T, refusing to replace with a new map", raw)
+	}
+	return m, nil
+}
 
-	enable := func(name string) {
-		p, _ := plugins[name].(map[string]any)
-		if p == nil {
-			p = map[string]any{}
-		}
-		p["enabled"] = true
-		plugins[name] = p
+// enableNamedPlugins sets enabled:true on the named plugins only. The rest of
+// the plugins map is left alone; the map object itself is never replaced.
+func enableNamedPlugins(data map[string]any, names ...string) error {
+	plugins, err := ensurePluginsMap(data)
+	if err != nil {
+		return err
 	}
-	enable(narePerfPluginName)
-	enable(bundledNoTypingPlugin)
-	data["plugins"] = plugins
+	for _, name := range names {
+		enablePluginEntry(plugins, name)
+	}
+	return nil
+}
+
+func enablePluginEntry(plugins map[string]any, name string) {
+	raw, exists := plugins[name]
+	if !exists || raw == nil {
+		plugins[name] = map[string]any{"enabled": true}
+		return
+	}
+	p, ok := raw.(map[string]any)
+	if !ok {
+		plugins[name] = map[string]any{"enabled": true}
+		return
+	}
+	p["enabled"] = true
+	plugins[name] = p
 }
 
 func narePerfPluginValid() error {
