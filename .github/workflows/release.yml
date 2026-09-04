@@ -5,6 +5,8 @@ on:
   push:
     tags:
       - v*
+  # Bake a den desktop.asar without tagging (artifact only; no GitHub Release).
+  workflow_dispatch:
 
 env:
   FORCE_COLOR: true
@@ -13,7 +15,65 @@ permissions:
   contents: write
 
 jobs:
+  # Compile plugins/* into Equicord src/userplugins and emit dist/desktop.asar.
+  # Equicord pin: commit that currently backs their moving `latest` release tag
+  # (main @ 2026-09-03, ClientSideBlock: Fix Crashing). Bump when Equicord's
+  # Discord API patches need to ship in Narecord's asar.
+  build-desktop-asar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Narecord
+        uses: actions/checkout@v6
+        with:
+          path: Narecord
+
+      - name: Checkout Equicord
+        uses: actions/checkout@v6
+        with:
+          repository: Equicord/Equicord
+          path: Equicord
+          # Pin: Equicord/Equicord@b90a13be8e0636837e9bfdc8f18cc40cf8190962
+          # (current `latest` release / main as of 2026-09-03).
+          ref: b90a13be8e0636837e9bfdc8f18cc40cf8190962
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Copy den userplugins into Equicord src/userplugins
+        run: bash Narecord/scripts/copy-den-userplugins.sh Narecord Equicord
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: Equicord/package.json
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: Equicord/pnpm-lock.yaml
+
+      - name: Install Equicord dependencies
+        working-directory: Equicord
+        run: pnpm install --frozen-lockfile
+
+      - name: Build standalone desktop.asar
+        working-directory: Equicord
+        run: pnpm buildStandalone
+
+      - name: Confirm desktop.asar
+        run: |
+          test -f Equicord/dist/desktop.asar
+          ls -lh Equicord/dist/desktop.asar
+
+      - name: Upload narecord-desktop-asar
+        uses: actions/upload-artifact@v7
+        with:
+          name: narecord-desktop-asar
+          path: Equicord/dist/desktop.asar
+          if-no-files-found: error
+
   build-linux:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-24.04
 
     steps:
@@ -90,6 +150,7 @@ jobs:
             NarelotlCli-linux
 
   build-mac:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ${{ matrix.runner }}
 
     strategy:
@@ -203,6 +264,7 @@ jobs:
             ${{ matrix.cli_name }}
 
   build-windows:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: windows-latest
 
     steps:
@@ -260,8 +322,8 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: [build-linux, build-mac, build-windows]
-    if: always() && !cancelled() && needs.build-linux.result == 'success' && needs.build-windows.result == 'success'
+    needs: [build-linux, build-mac, build-windows, build-desktop-asar]
+    if: always() && !cancelled() && github.event_name != 'workflow_dispatch' && needs.build-linux.result == 'success' && needs.build-windows.result == 'success' && needs.build-desktop-asar.result == 'success'
 
     steps:
       - name: Checkout code
@@ -293,6 +355,12 @@ jobs:
           name: Narelotl-windows
           path: windows
 
+      - name: "Download den desktop.asar"
+        uses: actions/download-artifact@v8
+        with:
+          name: narecord-desktop-asar
+          path: asar
+
       - name: Delete existing release
         run: gh release delete "${{ github.ref_name }}" --yes || true
         env:
@@ -320,3 +388,4 @@ jobs:
             macos/NarelotlCli-darwin-x64
             macos/NarelotlCli-darwin-arm64
             windows/Narelotl*.exe
+            asar/desktop.asar

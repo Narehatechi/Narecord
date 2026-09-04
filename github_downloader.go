@@ -37,9 +37,10 @@ var InstalledHash = "None"
 var LatestHash = "Unknown"
 var IsDevInstall bool
 
-// Equicord publishes desktop.asar on the latest release, so one latest-endpoint
-// hit is the common path. Walk at most two list pages if it is missing. Cache the
-// resolved release for process lifetime so Install / Repair does not re-hit GitHub.
+// Narecord publishes a den-baked desktop.asar on tagged releases. Prefer that
+// latest-endpoint hit; walk at most two Narecord list pages if the asset is
+// missing, then Equicord's latest asar. Cache the resolved release for process
+// lifetime so Install / Repair does not re-hit GitHub.
 const desktopAsarListMaxPages = 2
 
 var (

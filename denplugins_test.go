@@ -166,21 +166,45 @@ func TestDenPluginCardsStayPerPluginNotOneCoat(t *testing.T) {
 	}
 }
 
-func TestReadmeDocumentsStockAsarDoesNotLoadUserplugins(t *testing.T) {
+func TestReadmeDocumentsDenAsarBake(t *testing.T) {
 	raw, err := os.ReadFile("README.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	doc := string(raw)
 	for _, needle := range []string{
-		"FIXME: stock Equicord asar does not list den userplugins",
+		"build-desktop-asar",
 		"Total Userplugins: 0",
-		"userPlugin: true",
-		"QuickCSS fallback",
+		"desktop.asar",
+		"falls back to Equicord",
+		"Abyss stays layers",
+		"NareNotes stays a notebook",
 	} {
 		if !strings.Contains(doc, needle) {
-			t.Errorf("README missing stock-asar callout %q", needle)
+			t.Errorf("README missing den asar-bake callout %q", needle)
 		}
+	}
+}
+
+func TestPluginsDirHasEveryAsarBakeTarget(t *testing.T) {
+	want := append(append([]string{}, denUserpluginNames...), narePerfPluginName)
+	entries, err := os.ReadDir("plugins")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]bool{}
+	for _, e := range entries {
+		if e.IsDir() {
+			got[e.Name()] = true
+		}
+	}
+	for _, name := range want {
+		if !got[name] {
+			t.Errorf("plugins/%s missing; Release asar bake copies every folder under plugins/", name)
+		}
+	}
+	if len(got) != len(want) {
+		t.Errorf("plugins/ has %d folders, asar bake expects %d (%v vs %v)", len(got), len(want), got, want)
 	}
 }
 

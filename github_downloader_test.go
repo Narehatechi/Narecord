@@ -84,23 +84,30 @@ func TestReleaseHash(t *testing.T) {
 	}
 }
 
-func TestDesktopAsarURLsPointAtEquicord(t *testing.T) {
-	urls := []string{
-		ReleaseUrl,
-		ReleaseUrlFallback,
-		ReleaseListUrl,
-		ReleaseListUrlFallback,
-		DesktopAsarFallbackUrl,
+func TestDesktopAsarURLsPreferNarecordWithEquicordFallback(t *testing.T) {
+	if !strings.Contains(ReleaseUrl, "Narehatechi/Narecord") {
+		t.Errorf("ReleaseUrl should prefer Narecord: %s", ReleaseUrl)
 	}
-	for _, u := range urls {
+	if !strings.Contains(ReleaseListUrl, "Narehatechi/Narecord") {
+		t.Errorf("ReleaseListUrl should prefer Narecord: %s", ReleaseListUrl)
+	}
+	if strings.Contains(ReleaseUrl, "Equicord/Equicord") {
+		t.Errorf("ReleaseUrl should not be Equicord: %s", ReleaseUrl)
+	}
+	if strings.Contains(ReleaseListUrl, "Equicord/Equicord") {
+		t.Errorf("ReleaseListUrl should not be Equicord: %s", ReleaseListUrl)
+	}
+
+	fallbacks := []string{ReleaseUrlFallback, ReleaseListUrlFallback, DesktopAsarFallbackUrl}
+	for _, u := range fallbacks {
+		if !strings.Contains(u, "Equicord/Equicord") {
+			t.Errorf("asar fallback should point at Equicord/Equicord: %s", u)
+		}
 		if strings.Contains(u, "Narehatechi/Narecord") {
-			t.Errorf("desktop.asar fetch must not look at Narecord installer assets: %s", u)
+			t.Errorf("asar fallback should not be Narecord: %s", u)
 		}
 		if strings.Contains(u, "releases/tags/v1.0.0") {
 			t.Errorf("desktop.asar fallback must not use a missing Narecord v1.0.0 tag: %s", u)
-		}
-		if !strings.Contains(u, "Equicord/Equicord") {
-			t.Errorf("desktop.asar URL should point at Equicord/Equicord: %s", u)
 		}
 	}
 }
@@ -196,7 +203,7 @@ func TestIsGithubRateLimitStatus(t *testing.T) {
 	}
 }
 
-func TestFetchReleaseWithDesktopAsarFromEquicord(t *testing.T) {
+func TestFetchReleaseWithDesktopAsarFromNarecordOrEquicord(t *testing.T) {
 	resetDesktopAsarReleaseCache()
 	t.Cleanup(resetDesktopAsarReleaseCache)
 	rel, err := fetchReleaseWithDesktopAsar()
@@ -205,7 +212,7 @@ func TestFetchReleaseWithDesktopAsarFromEquicord(t *testing.T) {
 		if strings.Contains(msg, "403") || strings.Contains(msg, "429") || strings.Contains(msg, "401") {
 			t.Skip(err)
 		}
-		t.Fatalf("should find desktop.asar on Equicord: %v", err)
+		t.Fatalf("should find desktop.asar on Narecord or Equicord fallback: %v", err)
 	}
 	url := desktopAsarDownloadURL(rel)
 	if url == "" {
@@ -214,11 +221,12 @@ func TestFetchReleaseWithDesktopAsarFromEquicord(t *testing.T) {
 	if !strings.Contains(url, "desktop.asar") {
 		t.Fatalf("url = %s", url)
 	}
-	if !strings.Contains(url, "Equicord/Equicord") {
-		t.Fatalf("expected Equicord asar url, got %s", url)
+	switch {
+	case strings.Contains(url, "Narehatechi/Narecord"):
+		t.Logf("picked Narecord asar %s %s", rel.TagName, url)
+	case strings.Contains(url, "Equicord/Equicord"):
+		t.Logf("fell back to Equicord asar %s %s", rel.TagName, url)
+	default:
+		t.Fatalf("expected Narecord or Equicord asar url, got %s", url)
 	}
-	if strings.Contains(url, "Narehatechi/Narecord") {
-		t.Fatalf("should not use Narecord installer assets: %s", url)
-	}
-	t.Logf("picked %s %s", rel.TagName, url)
 }
