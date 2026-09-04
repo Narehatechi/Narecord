@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type GithubRelease struct {
@@ -35,6 +36,23 @@ var GithubDoneChan chan bool
 var InstalledHash = "None"
 var LatestHash = "Unknown"
 var IsDevInstall bool
+
+// Equicord publishes desktop.asar on the latest release, so one latest-endpoint
+// hit is the common path. Walk at most two list pages if it is missing. Cache the
+// resolved release for process lifetime so Install / Repair does not re-hit GitHub.
+const desktopAsarListMaxPages = 2
+
+var (
+	installedHashRe         = regexp.MustCompile(`// (?:Narecord|Equicord|Vencord) (\w+)`)
+	desktopAsarCacheMu      sync.Mutex
+	desktopAsarReleaseCache *GithubRelease
+)
+
+func resetDesktopAsarReleaseCache() {
+	desktopAsarCacheMu.Lock()
+	desktopAsarReleaseCache = nil
+	desktopAsarCacheMu.Unlock()
+}
 
 func desktopAsarDownloadURL(rel *GithubRelease) string {
 	if rel == nil {
@@ -148,18 +166,37 @@ func releasesPageURL(base string, page int) string {
 }
 
 func fetchReleaseWithDesktopAsar() (*GithubRelease, error) {
+	desktopAsarCacheMu.Lock()
+	defer desktopAsarCacheMu.Unlock()
+	if desktopAsarDownloadURL(desktopAsarReleaseCache) != "" {
+		return desktopAsarReleaseCache, nil
+	}
+
+	rel, err := fetchReleaseWithDesktopAsarUncached()
+	if err != nil {
+		return nil, err
+	}
+	desktopAsarReleaseCache = rel
+	return rel, nil
+}
+
+func fetchReleaseWithDesktopAsarUncached() (*GithubRelease, error) {
 	latest, latestErr := GetGithubRelease(ReleaseUrl, ReleaseUrlFallback)
 	if latestErr == nil && desktopAsarDownloadURL(latest) != "" {
 		return latest, nil
 	}
 	if latestErr != nil {
 		Log.Debug("Latest release fetch failed:", latestErr)
+		// Rate-limited / blocked: do not walk extra list pages.
+		if isGithubRateLimitStatus(latestErr) {
+			return nil, latestErr
+		}
 	} else {
 		Log.Debug("Latest release", latest.TagName, "has no desktop.asar; walking recent releases")
 	}
 
 	var listErr error
-	for page := 1; page <= 5; page++ {
+	for page := 1; page <= desktopAsarListMaxPages; page++ {
 		list, err := GetGithubReleases(releasesPageURL(ReleaseListUrl, page), releasesPageURL(ReleaseListUrlFallback, page))
 		if err != nil {
 			listErr = err
@@ -172,6 +209,9 @@ func fetchReleaseWithDesktopAsar() (*GithubRelease, error) {
 		if len(list) == 0 {
 			break
 		}
+	}
+	if isGithubRateLimitStatus(listErr) {
+		return nil, listErr
 	}
 
 	fallback, fbErr := GetGithubRelease(DesktopAsarFallbackUrl, DesktopAsarFallbackUrl)
@@ -190,6 +230,14 @@ func fetchReleaseWithDesktopAsar() (*GithubRelease, error) {
 		return nil, fbErr
 	}
 	return nil, errors.New("Didn't find desktop.asar download link")
+}
+
+func isGithubRateLimitStatus(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := err.Error()
+	return strings.Contains(s, "401") || strings.Contains(s, "403") || strings.Contains(s, "429")
 }
 
 func InitGithubDownloader() {
@@ -241,8 +289,7 @@ func InitGithubDownloader() {
 
 	Log.Debug("Found existing Narecord Install. Checking for hash...")
 
-	re := regexp.MustCompile(`// (?:Narecord|Equicord|Vencord) (\w+)`)
-	match := re.FindSubmatch(b)
+	match := installedHashRe.FindSubmatch(b)
 	if match != nil {
 		InstalledHash = string(match[1])
 		Log.Debug("Existing hash is", InstalledHash)

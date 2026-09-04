@@ -37,6 +37,7 @@ var (
 	autoCompleteDir        string
 	autoCompleteFile       string
 	autoCompleteCandidates []string
+	autoCompleteLower      []string
 	autoCompleteIdx        int
 	lastAutoComplete       string
 	didAutoComplete        bool
@@ -243,12 +244,17 @@ func onCustomInputChanged() {
 		lastAutoComplete = ""
 		autoCompleteFile = ""
 		autoCompleteCandidates = nil
+		autoCompleteLower = nil
 
 		// Generate autocomplete items
 		files, err := os.ReadDir(dir)
 		if err == nil {
-			for _, file := range files {
-				autoCompleteCandidates = append(autoCompleteCandidates, file.Name())
+			autoCompleteCandidates = make([]string, len(files))
+			autoCompleteLower = make([]string, len(files))
+			for i, file := range files {
+				name := file.Name()
+				autoCompleteCandidates[i] = name
+				autoCompleteLower[i] = strings.ToLower(name)
 			}
 		}
 	} else if !didAutoComplete {
@@ -271,9 +277,14 @@ func onCustomInputChanged() {
 func makeAutoComplete() []any {
 	input := strings.ToLower(autoCompleteFile)
 
-	var candidates []any
-	for _, e := range autoCompleteCandidates {
-		file := strings.ToLower(e)
+	candidates := make([]any, 0, len(autoCompleteCandidates))
+	for i, e := range autoCompleteCandidates {
+		file := e
+		if i < len(autoCompleteLower) {
+			file = autoCompleteLower[i]
+		} else {
+			file = strings.ToLower(e)
+		}
 		if autoCompleteFile == "" || strings.HasPrefix(file, input) {
 			candidates = append(candidates, e)
 		}
