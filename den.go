@@ -30,7 +30,7 @@ import (
 //	<BaseDir>/settings/settings.json         MERGE-ONLY: enable QuickCSS + theme + narePerf
 //	<BaseDir>/settings/settings.json.bak-before-nareperf  first-write backup
 //	<BaseDir>/userplugins/narePerf/index.ts  first-party den userplugin source
-//	<BaseDir>/userplugins/{Abyss,...}/       den userplugin sources (not in Equicord asar)
+//	<BaseDir>/userplugins/{Abyss,...}/       den sources for source-tree builds (stock asar ignores these)
 //
 // settings.json is never replaced. Missing/stub Narecord settings are seeded from
 // Equicord (or the richest sibling) then merged. QuickCSS uses

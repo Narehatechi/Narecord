@@ -17,9 +17,11 @@ import (
 )
 
 // narePerf is a first-party den userplugin. Stock Narelotl downloads Equicord's
-// desktop.asar, which only lists plugins compiled into that asar. The installer
-// therefore:
-//  1. writes plugin source to <dataDir>/userplugins/narePerf (always)
+// desktop.asar, which only lists plugins compiled into that asar. Writing
+// index.ts under <dataDir>/userplugins does not make it searchable in Plugin
+// Management (Total Userplugins: 0). On stock Install, fluff-kill therefore
+// comes from the QuickCSS fallback, not a live userplugin. The installer:
+//  1. writes plugin source to <dataDir>/userplugins/narePerf (always; for source builds)
 //  2. copies it into Equicord src/userplugins when a source tree is found
 //  3. MERGES narePerf + bundled NoTypingAnimation into settings.json (never replaces plugins)
 //  4. sets windowsMaterial to none

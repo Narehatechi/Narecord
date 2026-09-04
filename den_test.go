@@ -658,6 +658,13 @@ func TestInstallDenIntoWritesThemeQuickCSSAndSettings(t *testing.T) {
 	if !ExistsFile(path.Join(root, "userplugins", "Hideout", "style.css")) {
 		t.Fatal("Hideout style.css was not written")
 	}
+	notes, err := os.ReadFile(path.Join(root, "userplugins", "NareNotes", "index.tsx"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(notes), `name: "NareNotes"`) || !strings.Contains(string(notes), "Field notebook") {
+		t.Fatalf("NareNotes userplugin missing: %s", notes)
+	}
 }
 
 func TestPatchAsarEquicordToolboxRetitlesWithoutTouchingPluginId(t *testing.T) {

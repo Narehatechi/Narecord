@@ -32,6 +32,7 @@ func TestWriteDenUserpluginsWritesEveryEmbeddedFile(t *testing.T) {
 		"NareMotion":    {"index.ts", "style.css"},
 		"NarehateBadge": {"index.ts"},
 		"Narelogs":      {"index.tsx", "style.css"},
+		"NareNotes":     {"index.tsx", "style.css"},
 		"Nnaa":          {"index.tsx"},
 	}
 	for _, name := range denUserpluginNames {
@@ -142,6 +143,44 @@ func TestInstallDenShipsDenUserpluginsEndToEnd(t *testing.T) {
 	np, _ := plugins[narePerfPluginName].(map[string]any)
 	if np["enabled"] != true {
 		t.Fatal("narePerf must still be enabled")
+	}
+}
+
+func TestDenPluginCardsStayPerPluginNotOneCoat(t *testing.T) {
+	css := denCSS()
+	if !strings.Contains(css, `title^="Layers, relics"`) {
+		t.Fatal("Abyss must keep its own layers card")
+	}
+	if !strings.Contains(css, `title^="Field notebook"`) {
+		t.Fatal("NareNotes must keep its notebook card")
+	}
+	if !strings.Contains(css, `title="Nanachi hideout look."`) {
+		t.Fatal("Hideout must keep its own hideout card")
+	}
+	src, err := denPluginIndexSource("NareNotes")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(src, `name: "NareNotes"`) || !strings.Contains(src, "Field notebook") {
+		t.Fatal("NareNotes source must keep the Field notebook description the card CSS keys off")
+	}
+}
+
+func TestReadmeDocumentsStockAsarDoesNotLoadUserplugins(t *testing.T) {
+	raw, err := os.ReadFile("README.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := string(raw)
+	for _, needle := range []string{
+		"FIXME: stock Equicord asar does not list den userplugins",
+		"Total Userplugins: 0",
+		"userPlugin: true",
+		"QuickCSS fallback",
+	} {
+		if !strings.Contains(doc, needle) {
+			t.Errorf("README missing stock-asar callout %q", needle)
+		}
 	}
 }
 

@@ -16,11 +16,20 @@ import (
 	"embed"
 )
 
-// Den userplugins ship the same way narePerf does: Install writes sources into
-// <dataDir>/userplugins/<Name>/ because stock Equicord desktop.asar does not
-// contain them. Settings enable is MERGE-ONLY via enableNamedPlugins.
+// Den userplugin sources live under plugins/<Name>/ and are written on Install
+// for source-tree builds. Settings enable is MERGE-ONLY via enableNamedPlugins.
 //
-//go:embed plugins/Abyss plugins/Hideout plugins/Incinerator plugins/NareMotion plugins/NarehateBadge plugins/Narelogs plugins/Nnaa
+// FIXME(stock-asar): Equicord's released desktop.asar does NOT compile or load
+// TypeScript from %APPDATA%\Narecord\userplugins (or Equicord\userplugins).
+// Live Plugin Management shows Total Userplugins: 0 with sources on disk.
+// narePerf only "works" on stock Install via its QuickCSS fallback, not as a
+// real userplugin. These plugins appear in Plugin Management only after they
+// are compiled into a custom narecord.asar / desktop.asar (userPlugin:true),
+// typically by copying this folder into Equicord src/userplugins and running
+// `pnpm build`. A follow-up should ship that asar from Narelotl instead of
+// stock Equicord desktop.asar.
+//
+//go:embed plugins/Abyss plugins/Hideout plugins/Incinerator plugins/NareMotion plugins/NarehateBadge plugins/Narelogs plugins/NareNotes plugins/Nnaa
 var denUserpluginFS embed.FS
 
 var denUserpluginNames = []string{
@@ -30,6 +39,7 @@ var denUserpluginNames = []string{
 	"NareMotion",
 	"NarehateBadge",
 	"Narelogs",
+	"NareNotes",
 	"Nnaa",
 }
 
