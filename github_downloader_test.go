@@ -7,6 +7,7 @@
 package main
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -139,7 +140,65 @@ func TestInstallerReleaseURLsStayOnNarecord(t *testing.T) {
 	}
 }
 
+func TestDesktopAsarListMaxPagesIsSmall(t *testing.T) {
+	if desktopAsarListMaxPages < 1 || desktopAsarListMaxPages > 2 {
+		t.Fatalf("desktopAsarListMaxPages = %d, want 1 or 2", desktopAsarListMaxPages)
+	}
+}
+
+func TestFetchReleaseWithDesktopAsarUsesProcessCache(t *testing.T) {
+	resetDesktopAsarReleaseCache()
+	t.Cleanup(resetDesktopAsarReleaseCache)
+
+	want := &GithubRelease{
+		TagName: "cached",
+		Assets: []struct {
+			Name        string `json:"name"`
+			DownloadURL string `json:"browser_download_url"`
+		}{
+			{Name: "desktop.asar", DownloadURL: "https://example.test/cached.asar"},
+		},
+	}
+	desktopAsarCacheMu.Lock()
+	desktopAsarReleaseCache = want
+	desktopAsarCacheMu.Unlock()
+
+	got, err := fetchReleaseWithDesktopAsar()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Fatalf("expected cached release pointer, got %+v", got)
+	}
+}
+
+func TestInstalledHashRe(t *testing.T) {
+	for _, line := range []string{
+		"// Narecord abcdef1",
+		"// Equicord abcdef1",
+		"// Vencord abcdef1",
+	} {
+		m := installedHashRe.FindSubmatch([]byte(line))
+		if m == nil || string(m[1]) != "abcdef1" {
+			t.Fatalf("%q -> %q", line, m)
+		}
+	}
+}
+
+func TestIsGithubRateLimitStatus(t *testing.T) {
+	for _, s := range []string{"401 Unauthorized", "403 Forbidden", "429 Too Many Requests"} {
+		if !isGithubRateLimitStatus(errors.New(s)) {
+			t.Fatalf("should treat %q as a rate-limit/block", s)
+		}
+	}
+	if isGithubRateLimitStatus(errors.New("500 Internal Server Error")) {
+		t.Fatal("500 is not a rate-limit backoff")
+	}
+}
+
 func TestFetchReleaseWithDesktopAsarFromEquicord(t *testing.T) {
+	resetDesktopAsarReleaseCache()
+	t.Cleanup(resetDesktopAsarReleaseCache)
 	rel, err := fetchReleaseWithDesktopAsar()
 	if err != nil {
 		msg := err.Error()

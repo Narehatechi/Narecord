@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"os"
 	path "path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -345,5 +346,114 @@ func TestPatchAsarEquicordToolboxNoopWhenAlreadyNarecord(t *testing.T) {
 	}
 	if string(out) != string(in) {
 		t.Fatalf("asar changed when already Narecord: %s", out)
+	}
+}
+
+func TestReplaceAllEqualLengthInPlaceSpansChunks(t *testing.T) {
+	dir := t.TempDir()
+	asar := path.Join(dir, "desktop.asar")
+	// 7-byte prefix so with 8-byte chunks the first needle starts 1 byte before a
+	// boundary; the second sits after a 3-byte gap.
+	in := append([]byte("xxxxxxx"), equicordToolboxLabel...)
+	in = append(in, []byte("yyy")...)
+	in = append(in, equicordToolboxLabel...)
+	in = append(in, []byte("zz")...)
+	if err := os.WriteFile(asar, in, 0644); err != nil {
+		t.Fatal(err)
+	}
+	n, err := replaceAllEqualLengthInPlaceChunked(asar, equicordToolboxLabel, narecordToolboxLabel, 8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 2 {
+		t.Fatalf("replaced %d, want 2", n)
+	}
+	out, err := os.ReadFile(asar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(out, equicordToolboxLabel) {
+		t.Fatalf("needle left behind: %s", out)
+	}
+	if bytes.Count(out, narecordToolboxLabel) != 2 {
+		t.Fatalf("expected 2 replacements, got %s", out)
+	}
+	want := append([]byte("xxxxxxx"), narecordToolboxLabel...)
+	want = append(want, []byte("yyy")...)
+	want = append(want, narecordToolboxLabel...)
+	want = append(want, []byte("zz")...)
+	if !bytes.Equal(out, want) {
+		t.Fatalf("got %q want %q", out, want)
+	}
+}
+
+func TestReplaceAllEqualLengthInPlacePreservesModeAndSurroundingBytes(t *testing.T) {
+	dir := t.TempDir()
+	asar := path.Join(dir, "desktop.asar")
+	in := append(bytes.Repeat([]byte{0xAA}, 64), equicordToolboxLabel...)
+	in = append(in, bytes.Repeat([]byte{0xBB}, 64)...)
+	if err := os.WriteFile(asar, in, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := replaceAllEqualLengthInPlace(asar, equicordToolboxLabel, narecordToolboxLabel); err != nil {
+		t.Fatal(err)
+	}
+	out, err := os.ReadFile(asar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(out[:64], bytes.Repeat([]byte{0xAA}, 64)) || !bytes.Equal(out[len(out)-64:], bytes.Repeat([]byte{0xBB}, 64)) {
+		t.Fatal("bytes outside the label were rewritten")
+	}
+	if runtime.GOOS != "windows" {
+		st, err := os.Stat(asar)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if st.Mode().Perm() != 0600 {
+			t.Fatalf("mode = %o, want 0600", st.Mode().Perm())
+		}
+	}
+}
+
+func TestFindBytesOffsetsMatchesReplaceAll(t *testing.T) {
+	needle := []byte("Equicord Toolbox")
+	cases := [][]byte{
+		{},
+		[]byte("nope"),
+		needle,
+		append(needle, needle...),
+		append([]byte("a"), append(needle, 'b')...),
+		append(bytes.Repeat([]byte("z"), 100), needle...),
+		append(needle, bytes.Repeat([]byte("z"), 100)...),
+	}
+	for i, in := range cases {
+		offs, err := findBytesOffsets(bytes.NewReader(in), needle, 9)
+		if err != nil {
+			t.Fatalf("case %d: %v", i, err)
+		}
+		want := bytes.Count(in, needle)
+		if len(offs) != want {
+			t.Fatalf("case %d: got %d offsets, want %d", i, len(offs), want)
+		}
+		for _, off := range offs {
+			if off < 0 || int(off)+len(needle) > len(in) {
+				t.Fatalf("case %d: offset %d out of range", i, off)
+			}
+			if !bytes.Equal(in[off:int(off)+len(needle)], needle) {
+				t.Fatalf("case %d: offset %d is not a match", i, off)
+			}
+		}
+	}
+}
+
+func TestDenCSSIsCached(t *testing.T) {
+	a := denCSS()
+	b := denCSS()
+	if a != b {
+		t.Fatal("cached den CSS should be stable")
+	}
+	if denCSSCached == "" || denCSSCached != a {
+		t.Fatal("denCSSOnce did not populate denCSSCached")
 	}
 }

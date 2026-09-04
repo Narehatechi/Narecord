@@ -12,9 +12,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	path "path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/ProtonMail/go-appdir"
 
@@ -67,15 +69,23 @@ func dataURI(mime string, b []byte) string {
 	return "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(b)
 }
 
+var (
+	denCSSOnce   sync.Once
+	denCSSCached string
+)
+
 func denCSS() string {
-	// Longer tokens first so __NAREHATE__ cannot eat __NAREHATE_CIRCLE__ / _LG__.
-	return strings.NewReplacer(
-		"__NAREHATE_CIRCLE_LG__", dataURI("image/webp", denNarehateCircleLgWebp),
-		"__NAREHATE_CIRCLE__", dataURI("image/webp", denNarehateCircleWebp),
-		"__NAREHATE_LG__", dataURI("image/webp", denNarehateLgWebp),
-		"__NAREHATE__", dataURI("image/webp", denNarehateWebp),
-		"__MITTY__", dataURI("image/webp", denMittyWebp),
-	).Replace(denCSSTemplate)
+	denCSSOnce.Do(func() {
+		// Longer tokens first so __NAREHATE__ cannot eat __NAREHATE_CIRCLE__ / _LG__.
+		denCSSCached = strings.NewReplacer(
+			"__NAREHATE_CIRCLE_LG__", dataURI("image/webp", denNarehateCircleLgWebp),
+			"__NAREHATE_CIRCLE__", dataURI("image/webp", denNarehateCircleWebp),
+			"__NAREHATE_LG__", dataURI("image/webp", denNarehateLgWebp),
+			"__NAREHATE__", dataURI("image/webp", denNarehateWebp),
+			"__MITTY__", dataURI("image/webp", denMittyWebp),
+		).Replace(denCSSTemplate)
+	})
+	return denCSSCached
 }
 
 func denThemeCSS() string {
@@ -212,12 +222,9 @@ func installDenInto(root string) error {
 		return err
 	}
 
+	// Linux FixOwnership WalkDirs the tree; chowning root covers settings/, themes/,
+	// and the files just written. macOS/Windows implementations are no-ops.
 	_ = FixOwnership(root)
-	_ = FixOwnership(settingsDir)
-	_ = FixOwnership(themesDir)
-	_ = FixOwnership(themePath)
-	_ = FixOwnership(quickPath)
-	_ = FixOwnership(settingsPath)
 	return nil
 }
 
@@ -258,26 +265,139 @@ func InstallDen() error {
 	return nil
 }
 
+// asarPatchChunkSize is the streaming window for toolbox retitles. Tests shrink it
+// to prove matches that span chunk boundaries are still found.
+var asarPatchChunkSize = 256 * 1024
+
 func patchAsarEquicordToolbox(asarPath string) error {
 	if len(equicordToolboxLabel) != len(narecordToolboxLabel) {
 		return errors.New("toolbox labels must be the same length to patch asar in place")
 	}
-	b, err := os.ReadFile(asarPath)
+	n, err := replaceAllEqualLengthInPlace(asarPath, equicordToolboxLabel, narecordToolboxLabel)
 	if err != nil {
 		return err
 	}
-	if !bytes.Contains(b, equicordToolboxLabel) {
-		return nil
+	if n > 0 {
+		_ = FixOwnership(asarPath)
 	}
-	patched := bytes.ReplaceAll(b, equicordToolboxLabel, narecordToolboxLabel)
-	if bytes.Contains(patched, equicordToolboxLabel) {
-		return errors.New("Equicord Toolbox still present after asar patch")
-	}
-	if err := os.WriteFile(asarPath, patched, 0644); err != nil {
-		return err
-	}
-	_ = FixOwnership(asarPath)
 	return nil
+}
+
+// replaceAllEqualLengthInPlace overwrites every non-overlapping occurrence of
+// needle with repl without loading the file into memory. Lengths must match so
+// asar offsets stay valid and a full rewrite is unnecessary.
+//
+// Replace-all (not replace-first) is required: "Equicord Toolbox" appears more
+// than once in desktop.asar (title-bar / tooltip copy). The string does not
+// overlap itself, so left-to-right skip-by-len matches bytes.ReplaceAll.
+// Absent needle is a read-only no-op success and leaves mode unchanged.
+func replaceAllEqualLengthInPlace(name string, needle, repl []byte) (int, error) {
+	return replaceAllEqualLengthInPlaceChunked(name, needle, repl, asarPatchChunkSize)
+}
+
+func replaceAllEqualLengthInPlaceChunked(name string, needle, repl []byte, chunkSize int) (int, error) {
+	if len(needle) != len(repl) {
+		return 0, errors.New("needle and replacement must be the same length")
+	}
+	if len(needle) == 0 {
+		return 0, errors.New("empty needle")
+	}
+
+	in, err := os.Open(name)
+	if err != nil {
+		return 0, err
+	}
+	offs, err := findBytesOffsets(in, needle, chunkSize)
+	closeErr := in.Close()
+	if err != nil {
+		return 0, err
+	}
+	if closeErr != nil {
+		return 0, closeErr
+	}
+	if len(offs) == 0 {
+		return 0, nil
+	}
+
+	out, err := os.OpenFile(name, os.O_RDWR, 0)
+	if err != nil {
+		return 0, err
+	}
+	defer out.Close()
+	for _, off := range offs {
+		if _, err := out.WriteAt(repl, off); err != nil {
+			return 0, err
+		}
+	}
+	return len(offs), nil
+}
+
+func findBytesOffsets(r io.Reader, needle []byte, chunkSize int) ([]int64, error) {
+	nlen := len(needle)
+	if nlen == 0 {
+		return nil, nil
+	}
+	if chunkSize < nlen {
+		chunkSize = nlen
+	}
+	carry := nlen - 1
+	buf := make([]byte, chunkSize)
+	window := make([]byte, 0, chunkSize+carry)
+	var (
+		absStart int64
+		offs     []int64
+	)
+	for {
+		n, err := r.Read(buf)
+		atEOF := errors.Is(err, io.EOF)
+		if n > 0 {
+			window = append(window, buf[:n]...)
+		}
+		if len(window) == 0 {
+			if atEOF || (n == 0 && err == nil) {
+				break
+			}
+			if err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		consumed := 0
+		for consumed <= len(window)-nlen {
+			rel := bytes.Index(window[consumed:], needle)
+			if rel < 0 {
+				break
+			}
+			idx := consumed + rel
+			offs = append(offs, absStart+int64(idx))
+			consumed = idx + nlen
+		}
+
+		if atEOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		tailStart := len(window) - carry
+		if tailStart < consumed {
+			tailStart = consumed
+		}
+		if tailStart < 0 {
+			tailStart = 0
+		}
+		if tailStart > 0 {
+			copy(window, window[tailStart:])
+			window = window[:len(window)-tailStart]
+			absStart += int64(tailStart)
+		}
+		if n == 0 {
+			break
+		}
+	}
+	return offs, nil
 }
 
 // PatchShippedAsarToolbox retitles Equicord Toolbox -> Narecord Toolbox inside
