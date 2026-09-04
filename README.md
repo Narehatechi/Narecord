@@ -6,26 +6,15 @@ This is a rebrand of [Equilotl](https://github.com/Equicord/Equilotl) (itself a 
 
 After Install, Discord User Settings should show **Narecord Settings** with a Nanachi/Narehate portrait on the first row (not an Equicord gear), Mitty on Plugins, moss/rose selected-row chrome, and a den banner on the Narecord page. On the Plugins tab, Narecord's set is labeled **Narecord Plugin** (not Equicord's User Plugin mark), and each of those cards has its own look (Abyss is the layers, NareNotes is a notebook, and so on). Real Equicord/Vencord plugin cards stay as they are.
 
-## FIXME: stock Equicord asar does not list den userplugins
+## Den userplugins in Plugin Management
 
-Narelotl's stock Install still downloads Equicord's `desktop.asar` and patches it into `narecord.asar`. That asar only shows plugins that were **compiled into it**.
+Stock Equicord `desktop.asar` does not load TypeScript from `%APPDATA%\Narecord\userplugins`. Sources on disk still show **Total Userplugins: 0**.
 
-It does **not** load TypeScript from `%APPDATA%\Narecord\userplugins` (or Equicord's `userplugins` folder) into Plugin Management. After Install you can have Abyss / Hideout / NareNotes / … sources on disk and still see **Total Userplugins: 0**. Settings remembering `enabled: true` is not enough.
+The Release workflow's `build-desktop-asar` job (this asar-bake) copies every folder under `plugins/` into Equicord `src/userplugins/<Name>/` and runs `pnpm buildStandalone`. Tagged Narecord releases upload that file as the `desktop.asar` asset. Install prefers Narehatechi/Narecord for the asar and falls back to Equicord if the asset is missing.
 
-What Install does today:
+After a tagged release that includes `desktop.asar` (e.g. v1.1.8), stock Install should list Abyss, NareNotes, and the rest as userplugins. Per-plugin card CSS is unchanged — Abyss stays layers, NareNotes stays a notebook, no shared coat.
 
-- Writes plugin sources under `plugins/<Name>/` in this repo, and copies them to `<dataDir>/userplugins/<Name>/` plus Equicord `src/userplugins/<Name>/` when a source tree is found.
-- MERGE-enables those names in `settings.json` (never replaces the plugins map).
-- Gives each den plugin its **own** Plugin card look in the den CSS (Abyss stays layers, NareNotes stays a notebook). No shared coat.
-- `narePerf` fluff-kill on stock Install is the QuickCSS fallback, not a live userplugin.
-
-What would actually put them back on Plugin Management:
-
-1. Copy `plugins/<Name>/` into an Equicord checkout at `src/userplugins/<Name>/`.
-2. `pnpm build` so they compile with `userPlugin: true`.
-3. Ship that `desktop.asar` / `narecord.asar` from Narelotl instead of Equicord's stock asar.
-
-That custom-asar step is a follow-up. Until then, source-tree installs work; stock Install will not make Abyss searchable.
+Until that tag exists, Install falls back to Equicord's `desktop.asar` (no den plugins compiled in). Source-tree installs still work by copying `plugins/<Name>/` into Equicord `src/userplugins`.
 
 ## Usage
 

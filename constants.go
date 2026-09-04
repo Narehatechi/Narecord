@@ -11,10 +11,12 @@ import (
 	"narelotl/buildinfo"
 )
 
-// desktop.asar is published by Equicord. Narecord releases only ship Narelotl binaries.
-const ReleaseUrl = "https://api.github.com/repos/Equicord/Equicord/releases/latest"
+// Narecord releases ship Narelotl binaries and a den-baked desktop.asar
+// (plugins/ compiled into Equicord src/userplugins via Release CI).
+// Equicord is fallback if a Narecord release lacks desktop.asar.
+const ReleaseUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases/latest"
 const ReleaseUrlFallback = "https://api.github.com/repos/Equicord/Equicord/releases/latest"
-const ReleaseListUrl = "https://api.github.com/repos/Equicord/Equicord/releases"
+const ReleaseListUrl = "https://api.github.com/repos/Narehatechi/Narecord/releases"
 const ReleaseListUrlFallback = "https://api.github.com/repos/Equicord/Equicord/releases"
 const DesktopAsarFallbackUrl = "https://api.github.com/repos/Equicord/Equicord/releases/latest"
 
