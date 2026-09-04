@@ -9,6 +9,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	path "path/filepath"
 	"runtime"
@@ -257,6 +258,324 @@ func TestEnableDenInSettingsJSONPreservesOtherKeys(t *testing.T) {
 	}
 	if count != 1 {
 		t.Fatalf("theme enabled twice: %#v", themes)
+	}
+}
+
+func manyPluginSettings(n int) map[string]any {
+	plugins := make(map[string]any, n)
+	for i := 0; i < n; i++ {
+		plugins[fmt.Sprintf("Plugin%03d", i)] = map[string]any{
+			"enabled": true,
+			"note":    "keep-me",
+		}
+	}
+	return map[string]any{
+		"useQuickCss":     false,
+		"windowsMaterial": "acrylic",
+		"plugins":         plugins,
+		"bigInt":          json.Number("9007199254740993"),
+	}
+}
+
+func mustSettingsJSON(t *testing.T, data map[string]any) []byte {
+	t.Helper()
+	out, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return append(out, '\n')
+}
+
+func parseTestSettings(t *testing.T, raw []byte) map[string]any {
+	t.Helper()
+	data, err := parseSettingsJSON(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+func TestMergeDenSettingsJSONNeverReplacesHundredPluginsWithThree(t *testing.T) {
+	raw := mustSettingsJSON(t, manyPluginSettings(100))
+	out, err := mergeDenSettingsJSON(raw, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := parseTestSettings(t, out)
+	plugins, ok := data["plugins"].(map[string]any)
+	if !ok {
+		t.Fatal("plugins map missing")
+	}
+	if len(plugins) < 100 {
+		t.Fatalf("plugins wiped: had 100, got %d (the v1.1.6 overwrite bug)", len(plugins))
+	}
+	for i := 0; i < 100; i++ {
+		name := fmt.Sprintf("Plugin%03d", i)
+		p, _ := plugins[name].(map[string]any)
+		if p == nil || p["note"] != "keep-me" {
+			t.Fatalf("plugin %s was dropped or replaced: %#v", name, p)
+		}
+	}
+	for _, name := range []string{denToolboxPlugin, narePerfPluginName, bundledNoTypingPlugin} {
+		p, _ := plugins[name].(map[string]any)
+		if p["enabled"] != true {
+			t.Fatalf("%s should be enabled without replacing the plugins map", name)
+		}
+	}
+	if data["windowsMaterial"] != "none" {
+		t.Fatal("windowsMaterial should be merged to none")
+	}
+	if data["bigInt"] != json.Number("9007199254740993") {
+		t.Fatalf("large integer rewritten: %#v", data["bigInt"])
+	}
+}
+
+func TestMergeDenSettingsJSONSeedsMissingFromEquicord(t *testing.T) {
+	seed := mustSettingsJSON(t, manyPluginSettings(100))
+	out, err := mergeDenSettingsJSON(nil, seed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := parseTestSettings(t, out)
+	plugins, _ := data["plugins"].(map[string]any)
+	if len(plugins) < 100 {
+		t.Fatalf("missing Narecord settings were not seeded from Equicord: %d plugins", len(plugins))
+	}
+	if plugins["Plugin000"] == nil {
+		t.Fatal("seeded Equicord plugin missing")
+	}
+	np, _ := plugins[narePerfPluginName].(map[string]any)
+	if np["enabled"] != true {
+		t.Fatal("narePerf should still be enabled after seed")
+	}
+}
+
+func TestMergeDenSettingsJSONSeedsV11StubFromEquicord(t *testing.T) {
+	stub := mustSettingsJSON(t, map[string]any{
+		"useQuickCss":     true,
+		"windowsMaterial": "none",
+		"plugins": map[string]any{
+			narePerfPluginName:    map[string]any{"enabled": true},
+			bundledNoTypingPlugin: map[string]any{"enabled": true},
+			denToolboxPlugin:      map[string]any{"enabled": true},
+		},
+	})
+	if !isSparseInstallerSettings(parseTestSettings(t, stub)) {
+		t.Fatal("v1.1.6 3-plugin file should be treated as an installer stub")
+	}
+	seed := mustSettingsJSON(t, manyPluginSettings(100))
+	out, err := mergeDenSettingsJSON(stub, seed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := parseTestSettings(t, out)
+	plugins, _ := data["plugins"].(map[string]any)
+	if len(plugins) < 100 {
+		t.Fatalf("stub was not replaced by Equicord seed: %d plugins", len(plugins))
+	}
+	if plugins["Plugin042"] == nil {
+		t.Fatal("Equicord plugin 042 missing after stub recovery")
+	}
+}
+
+func TestMergeDenSettingsJSONRefusesUnparseableAndNonObjectPlugins(t *testing.T) {
+	if _, err := mergeDenSettingsJSON([]byte("{ this is not json"), nil); err == nil {
+		t.Fatal("unparseable settings must not be replaced with a stub")
+	}
+	if _, err := mergeDenSettingsJSON([]byte(`{"plugins":["Nope"]}`), nil); err == nil {
+		t.Fatal("non-object plugins must not be replaced with a 3-plugin map")
+	}
+}
+
+func TestInstallDenIntoBacksUpAndPreservesExistingSettings(t *testing.T) {
+	root := t.TempDir()
+	settingsDir := path.Join(root, "settings")
+	if err := os.MkdirAll(settingsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	raw := mustSettingsJSON(t, manyPluginSettings(100))
+	settingsPath := path.Join(settingsDir, "settings.json")
+	if err := os.WriteFile(settingsPath, raw, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := installDenInto(root); err != nil {
+		t.Fatal(err)
+	}
+
+	bak, err := os.ReadFile(path.Join(settingsDir, settingsBackupName))
+	if err != nil {
+		t.Fatal("missing settings.json.bak-before-nareperf")
+	}
+	if !bytes.Equal(bak, raw) {
+		t.Fatal("backup is not the original settings.json")
+	}
+
+	got, err := os.ReadFile(settingsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data := parseTestSettings(t, got)
+	plugins, _ := data["plugins"].(map[string]any)
+	if len(plugins) < 100 {
+		t.Fatalf("installDenInto overwrote plugins: %d", len(plugins))
+	}
+
+	// Second write must not clobber the first backup.
+	if err := os.WriteFile(path.Join(settingsDir, settingsBackupName), []byte("first-backup"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := installDenInto(root); err != nil {
+		t.Fatal(err)
+	}
+	bak2, err := os.ReadFile(path.Join(settingsDir, settingsBackupName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(bak2) != "first-backup" {
+		t.Fatal("reinstall overwrote the first settings backup")
+	}
+}
+
+func TestInstallDenIntoSeedsFromSiblingAndDoesNotWipeEquicord(t *testing.T) {
+	equicord := t.TempDir()
+	narecord := t.TempDir()
+	if err := os.MkdirAll(path.Join(equicord, "settings"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	seed := mustSettingsJSON(t, manyPluginSettings(100))
+	if err := os.WriteFile(path.Join(equicord, "settings", "settings.json"), seed, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	picked := richestSettingsJSON([]string{narecord, equicord})
+	if settingsPluginCount(parseTestSettings(t, picked)) != 100 {
+		t.Fatal("richestSettingsJSON should pick Equicord's 100-plugin file")
+	}
+
+	if err := installDenIntoWithSeed(narecord, picked); err != nil {
+		t.Fatal(err)
+	}
+	if err := installDenIntoWithSeed(equicord, picked); err != nil {
+		t.Fatal(err)
+	}
+
+	narecordSettings := parseTestSettings(t, mustReadFile(t, path.Join(narecord, "settings", "settings.json")))
+	equicordSettings := parseTestSettings(t, mustReadFile(t, path.Join(equicord, "settings", "settings.json")))
+	if settingsPluginCount(narecordSettings) < 100 {
+		t.Fatalf("Narecord was created as a 3-plugin stub: %d", settingsPluginCount(narecordSettings))
+	}
+	if settingsPluginCount(equicordSettings) < 100 {
+		t.Fatalf("Equicord plugins were wiped: %d", settingsPluginCount(equicordSettings))
+	}
+	eqPlugins, _ := equicordSettings["plugins"].(map[string]any)
+	p, _ := eqPlugins["Plugin099"].(map[string]any)
+	if p["note"] != "keep-me" {
+		t.Fatal("Equicord plugin settings were replaced, not merged")
+	}
+}
+
+func TestInstallDenIntoLeavesUnparseableSettingsUntouched(t *testing.T) {
+	root := t.TempDir()
+	settingsDir := path.Join(root, "settings")
+	if err := os.MkdirAll(settingsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	settingsPath := path.Join(settingsDir, "settings.json")
+	garbage := []byte("{ this is not json")
+	if err := os.WriteFile(settingsPath, garbage, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := installDenInto(root); err == nil {
+		t.Fatal("expected error for unparseable settings.json")
+	}
+	got := mustReadFile(t, settingsPath)
+	if !bytes.Equal(got, garbage) {
+		t.Fatalf("unparseable settings.json was overwritten: %s", got)
+	}
+}
+
+func TestInstallDenIntoPreservesUserQuickCSSBlocks(t *testing.T) {
+	root := t.TempDir()
+	settingsDir := path.Join(root, "settings")
+	if err := os.MkdirAll(settingsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	user := "/* my custom css */\n.foo { color: red; }\n"
+	if err := os.WriteFile(path.Join(settingsDir, "quickCss.css"), []byte(user), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := installDenInto(root); err != nil {
+		t.Fatal(err)
+	}
+	got := string(mustReadFile(t, path.Join(settingsDir, "quickCss.css")))
+	if !strings.Contains(got, "my custom css") || !strings.Contains(got, ".foo { color: red; }") {
+		t.Fatalf("user QuickCSS was wiped: %s", got)
+	}
+	if strings.Count(got, denQuickCSSBegin) != 1 || strings.Count(got, denQuickCSSEnd) != 1 {
+		t.Fatal("den QuickCSS markers missing or duplicated")
+	}
+	if strings.Count(got, narePerfQuickCSSBegin) != 1 || strings.Count(got, narePerfQuickCSSEnd) != 1 {
+		t.Fatal("narePerf QuickCSS markers missing or duplicated")
+	}
+	if err := installDenInto(root); err != nil {
+		t.Fatal(err)
+	}
+	again := string(mustReadFile(t, path.Join(settingsDir, "quickCss.css")))
+	if strings.Count(again, denQuickCSSBegin) != 1 || strings.Count(again, narePerfQuickCSSBegin) != 1 {
+		t.Fatal("reinstall duplicated QuickCSS marker blocks")
+	}
+	if !strings.Contains(again, "my custom css") {
+		t.Fatal("user QuickCSS lost on reinstall")
+	}
+}
+
+func TestRichestSettingsJSONIgnoresUnreadableFiles(t *testing.T) {
+	a := t.TempDir()
+	b := t.TempDir()
+	if err := os.MkdirAll(path.Join(a, "settings"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path.Join(a, "settings", "settings.json"), []byte("nope"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if richestSettingsJSON([]string{a, b}) != nil {
+		t.Fatal("unreadable settings should not be chosen as seed")
+	}
+}
+
+func TestIsSparseInstallerSettings(t *testing.T) {
+	if !isSparseInstallerSettings(nil) || !isSparseInstallerSettings(map[string]any{}) {
+		t.Fatal("empty settings are sparse")
+	}
+	if isSparseInstallerSettings(manyPluginSettings(4)) {
+		t.Fatal("user plugins must not look like the installer stub")
+	}
+	if !isSparseInstallerSettings(map[string]any{
+		"plugins": map[string]any{narePerfPluginName: map[string]any{"enabled": true}},
+	}) {
+		t.Fatal("single installer plugin is still a stub")
+	}
+}
+
+func TestEnsurePluginsMapRefusesNonObject(t *testing.T) {
+	data := map[string]any{"plugins": []any{"x"}}
+	if _, err := ensurePluginsMap(data); err == nil {
+		t.Fatal("expected refuse")
+	}
+	if _, ok := data["plugins"].([]any); !ok {
+		t.Fatal("non-object plugins value was replaced")
+	}
+}
+
+func TestParseSettingsJSONStripsBOMAndPreservesNumbers(t *testing.T) {
+	raw := append(append([]byte{}, utf8BOM...), []byte(`{"n": 9007199254740993, "plugins": {}}`)...)
+	data, err := parseSettingsJSON(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data["n"] != json.Number("9007199254740993") {
+		t.Fatalf("number = %#v", data["n"])
 	}
 }
 

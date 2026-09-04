@@ -143,7 +143,9 @@ func TestEnableNarePerfInSettingsJSON(t *testing.T) {
 		},
 		"windowsMaterial": "acrylic",
 	}
-	enableNarePerfInSettings(data)
+	if err := enableNarePerfInSettings(data); err != nil {
+		t.Fatal(err)
+	}
 	if data["windowsMaterial"] != "none" {
 		t.Fatal("acrylic must be stripped")
 	}
