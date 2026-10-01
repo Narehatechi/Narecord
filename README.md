@@ -97,3 +97,13 @@ go build --tags cli
 
 You might want to pass some flags to this command to get a better build.
 See [the GitHub workflow](https://github.com/Narehatechi/Narecord/blob/main/.github/workflows/release.yml) for what flags I pass or if you want more precise instructions
+
+## Mobile (phase 1, separate project)
+
+[`mobile/`](mobile/README.md) contains the foundation of a from-scratch,
+Revenge-like Narecord mobile loader (Android-first, iOS planned). It is
+architecturally independent from this Go desktop installer — different
+language (TypeScript/Kotlin), different plugin API, different patch
+target. See [`mobile/README.md`](mobile/README.md) for the architecture,
+what is and isn't implemented yet, and build/test instructions.
+

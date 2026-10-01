@@ -1,0 +1,46 @@
+name: Mobile
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yml"
+  workflow_dispatch:
+
+env:
+  FORCE_COLOR: true
+
+jobs:
+  # Runs the TypeScript mobile runtime tests only. Independent of the Go
+  # desktop build/release workflow (release.yml) - no Go toolchain, no
+  # Discord/Equicord checkout, no Android SDK required.
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build (type-check + compile)
+        run: npm run build
+
+      - name: Test
+        run: npm test
