@@ -69,23 +69,26 @@ export function topologicalSort(
   const order: string[] = [];
   const visited = new Set<string>();
   const visiting = new Set<string>();
+  const path: string[] = [];
 
-  const visit = (name: string, path: string[]): void => {
+  const visit = (name: string): void => {
     if (visited.has(name)) return;
     if (visiting.has(name)) {
       throw new CircularDependencyError([...path, name]);
     }
     visiting.add(name);
+    path.push(name);
     for (const dependency of getDependencies(name)) {
-      visit(dependency, [...path, name]);
+      visit(dependency);
     }
+    path.pop();
     visiting.delete(name);
     visited.add(name);
     order.push(name);
   };
 
   for (const name of names) {
-    visit(name, []);
+    visit(name);
   }
 
   return order;
