@@ -16,6 +16,9 @@ on:
 env:
   FORCE_COLOR: true
 
+permissions:
+  contents: read
+
 jobs:
   # Runs the TypeScript mobile runtime tests only. Independent of the Go
   # desktop build/release workflow (release.yml) - no Go toolchain, no
@@ -37,7 +40,7 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build (type-check + compile)
         run: npm run build

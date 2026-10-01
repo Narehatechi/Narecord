@@ -155,7 +155,7 @@ All commands below are run from the `mobile/` directory.
 cd mobile
 npm install
 npm run build   # tsc type-check + compile to dist/
-npm test        # tsc + node --test against the compiled output
+npm test        # node --test against the compiled output (run build first)
 ```
 
 Requirements: Node.js >= 20 (uses the built-in `node:test` runner — no

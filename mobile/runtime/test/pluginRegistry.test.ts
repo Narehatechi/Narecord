@@ -13,6 +13,7 @@ import {
   DuplicatePluginError,
   IncompatiblePluginError,
   PluginRegistry,
+  topologicalSort,
   UnknownDependencyError,
 } from "../src/pluginRegistry.js";
 import type { MobilePlugin, PluginContext } from "../src/types.js";
@@ -73,22 +74,12 @@ test("rejects plugins with unknown dependencies", () => {
   );
 });
 
-test("detects circular dependencies at start time", async () => {
-  const host = new InMemoryHostBridge();
-  const registry = new PluginRegistry(host);
-  // Register A depending on B, then B depending on A - the second
-  // registration will know "A" exists, forming a cycle only visible
-  // once both are registered and we attempt to resolve start order.
-  registry.register(makePlugin({ name: "A", dependencies: [] }));
-  registry.register(makePlugin({ name: "B", dependencies: ["A"] }));
-  // Mutate A's dependencies after the fact to form a cycle (simulating a
-  // registry that allowed forward references); this exercises the cycle
-  // detector directly via resolveStartOrder through startAll.
-  const aEntry = (registry as unknown as { plugins: Map<string, { plugin: MobilePlugin }> }).plugins.get("A");
-  if (!aEntry) throw new Error("expected plugin A to be registered");
-  aEntry.plugin.dependencies = ["B"];
-
-  await assert.rejects(() => registry.startAll(), CircularDependencyError);
+test("topologicalSort detects circular dependencies", () => {
+  const deps: Record<string, string[]> = { A: ["B"], B: ["A"] };
+  assert.throws(
+    () => topologicalSort(["A", "B"], name => deps[name] ?? []),
+    CircularDependencyError,
+  );
 });
 
 test("rejects incompatible host builds before plugin code starts", () => {

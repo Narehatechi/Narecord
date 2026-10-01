@@ -53,6 +53,46 @@ interface RegisteredPlugin {
 }
 
 /**
+ * Pure topological sort used to compute plugin start/stop order. Exported
+ * standalone (rather than as a private method) so cycle/ordering behavior
+ * can be unit-tested directly, without reaching into `PluginRegistry`
+ * internals.
+ *
+ * @param names - all node names to include in the sort.
+ * @param getDependencies - returns the declared dependencies of a node.
+ * @throws {CircularDependencyError} if the dependency graph has a cycle.
+ */
+export function topologicalSort(
+  names: string[],
+  getDependencies: (name: string) => string[],
+): string[] {
+  const order: string[] = [];
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+
+  const visit = (name: string, path: string[]): void => {
+    if (visited.has(name)) return;
+    if (visiting.has(name)) {
+      throw new CircularDependencyError([...path, name]);
+    }
+    visiting.add(name);
+    for (const dependency of getDependencies(name)) {
+      visit(dependency, [...path, name]);
+    }
+    visiting.delete(name);
+    visited.add(name);
+    order.push(name);
+  };
+
+  for (const name of names) {
+    visit(name, []);
+  }
+
+  return order;
+}
+
+
+/**
  * Plugin registry/loader for the mobile runtime.
  *
  * Responsibilities:
@@ -120,30 +160,10 @@ export class PluginRegistry {
 
   /** Computes a dependency-respecting start order for all registered plugins. */
   private resolveStartOrder(): string[] {
-    const order: string[] = [];
-    const visited = new Set<string>();
-    const visiting = new Set<string>();
-
-    const visit = (name: string, path: string[]): void => {
-      if (visited.has(name)) return;
-      if (visiting.has(name)) {
-        throw new CircularDependencyError([...path, name]);
-      }
-      visiting.add(name);
-      const entry = this.plugins.get(name);
-      for (const dependency of entry?.plugin.dependencies ?? []) {
-        visit(dependency, [...path, name]);
-      }
-      visiting.delete(name);
-      visited.add(name);
-      order.push(name);
-    };
-
-    for (const name of this.plugins.keys()) {
-      visit(name, []);
-    }
-
-    return order;
+    return topologicalSort(
+      [...this.plugins.keys()],
+      name => this.plugins.get(name)?.plugin.dependencies ?? [],
+    );
   }
 
   /**
