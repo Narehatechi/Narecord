@@ -174,10 +174,11 @@ function truncate(text: string, max = 240) {
 function formatRow(r: Row, i: number) {
     const icon = KIND_ICON[r.kind] ?? "•";
     const when = formatRelative(r.at);
+    const prefix = `${i + 1}. ${icon} ${r.kind} · ${when}`;
     if (r.kind === "edited" && r.before) {
-        return `${i + 1}. ${icon} edited · ${when}\n~~${truncate(r.before)}~~ → ${truncate(r.content)}`;
+        return `${prefix}\n~~${truncate(r.before)}~~ → ${truncate(r.content)}`;
     }
-    return `${i + 1}. ${icon} ${r.kind} · ${when} — ${truncate(r.content)}`;
+    return `${prefix} — ${truncate(r.content)}`;
 }
 
 function goneBox() {
@@ -235,7 +236,8 @@ let watchRoot: ParentNode | null = null;
 
 function watch() {
     const root = findScrollerRoot();
-    if (root === watchRoot && obs) {
+    const isFallback = root === document.body;
+    if (!isFallback && root === watchRoot && obs) {
         paint();
         return;
     }
@@ -264,7 +266,7 @@ export default definePlugin({
             ],
             execute: opts => {
                 const n = Math.max(1, Math.min(20, Number(findOption(opts, "count")) || 8));
-                const onlyThisChannel = Boolean(findOption(opts, "here", false));
+                const onlyThisChannel = findOption(opts, "here", false);
                 const currentChannelId = onlyThisChannel ? SelectedChannelStore.getChannelId() : undefined;
                 const rows = currentChannelId ? journal.filter(r => r.channelId === currentChannelId) : journal;
                 if (!rows.length) return { content: "Nnaa. Journal's empty." };
