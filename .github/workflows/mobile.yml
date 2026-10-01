@@ -47,3 +47,21 @@ jobs:
 
       - name: Test
         run: npm test
+
+  android-release-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Use Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Build Android release variant
+        run: ./gradlew --no-daemon :app:assembleRelease

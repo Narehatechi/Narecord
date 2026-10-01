@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Narecord Mobile Preview</string>
+    <string name="preview_message">Android host integration is not implemented yet.</string>
+</resources>

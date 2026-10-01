@@ -1,36 +1,57 @@
-# Android host skeleton (phase 1)
+# Android build
 
-This directory contains a **Kotlin interface skeleton**, not a working
-Android application or Discord patcher. It defines the Kotlin-side mirror
-of the TypeScript `HostBridge` contract in `../runtime/src/types.ts` so
-that future Android integration work has a stable starting point.
+The `app` module is a **buildable Android preview shell**, not a working
+Narecord loader or Discord patcher. The launch screen identifies the
+unfinished host integration; the Kotlin `HostBridge` remains an interface
+and mock. No Discord APK or bundle is read, modified, signed, or distributed.
 
-## What's here
+## Requirements
 
-- `hostbridge/src/main/kotlin/.../HostBridge.kt` — the host bridge
-  interface, plus explicit `TODO(...)` markers for everything not yet
-  implemented (bundle injection, Hermes integration, APK signing,
-  version-specific anchors).
-- `hostbridge/src/main/kotlin/.../MockHostBridge.kt` — an in-memory mock
-  implementation, mirroring `InMemoryHostBridge` from the TypeScript
-  runtime, for future Kotlin-side unit tests.
+- JDK 17
+- Android SDK with platform 35 and build tools 35.0.0 (the Gradle wrapper
+  downloads the pinned Gradle distribution)
 
-## What's deliberately NOT here
+## Build
 
-- No Gradle wrapper, Android Gradle Plugin, or `AndroidManifest.xml`. A
-  real Android app module requires the Android SDK/build tools, which are
-  not assumed to be available in this repository's CI or sandbox, and
-  standing one up prematurely would create an unbuildable, unmaintained
-  stub. When Android integration begins in earnest, this directory should
-  grow a proper Gradle module (see `mobile/README.md` roadmap).
-- No code that reads, patches, re-signs, or redistributes a Discord
-  APK/bundle.
-- No embedding of a Hermes/JS runtime.
+Run these commands from this directory:
 
-## Relationship to `mobile/runtime`
+```sh
+./gradlew :app:assembleDebug
+./gradlew :app:assembleRelease
+```
 
-The Kotlin types in `HostBridge.kt` intentionally mirror the TypeScript
-types in `mobile/runtime/src/types.ts` field-for-field. When the two
-diverge, the TypeScript runtime is the source of truth (it is the part
-that is actually built and tested in CI today); update the Kotlin mirror
-to match it.
+The release build is **unsigned** unless all four signing environment
+variables below are set. An unsigned APK is suitable for build verification,
+not installation or publication.
+
+```sh
+export NARECORD_ANDROID_KEYSTORE=/absolute/path/to/release.keystore
+export NARECORD_ANDROID_KEYSTORE_PASSWORD='...'
+export NARECORD_ANDROID_KEY_ALIAS='...'
+export NARECORD_ANDROID_KEY_PASSWORD='...'
+./gradlew :app:assembleRelease
+```
+
+The corresponding signed APK is written to
+`app/build/outputs/apk/release/app-release.apk`; without signing credentials
+Gradle writes `app/build/outputs/apk/release/app-release-unsigned.apk`.
+Never commit a keystore or its passwords. The Android CI job builds the
+unsigned variant for verification only; it does not publish APKs or use
+signing secrets. A future distribution job must store the keystore as a
+protected secret, decode it to a temporary file, and pass its path and
+passwords as environment variables.
+
+Set `-PnarecordVersionCode=<integer>` and
+`-PnarecordVersionName=<version>` to override the default app version for a
+build. Increase the version code for every published update.
+
+## Not ready for app-store release
+
+This build verifies the Android package and release configuration only. It
+does not load the TypeScript runtime, embed Hermes, implement a real
+`HostBridge`, inject a bundle, or provide functional loader UI. Those are
+separate implementation milestones; do not publish this preview shell as a
+working Narecord mobile release.
+
+The Kotlin `HostBridge` types mirror `mobile/runtime/src/types.ts`; the
+TypeScript runtime remains the source of truth for that contract.
