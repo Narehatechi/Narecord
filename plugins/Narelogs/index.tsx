@@ -13,6 +13,9 @@ const Narehatechi = { name: "Narehatechi", id: 1326338080696832010n };
 const DAY_MS = 86400000;
 const MAX_CACHE = 500;
 const PAINT_DEBOUNCE_MS = 150;
+/** Discord mounts the new channel's scroller asynchronously after CHANNEL_SELECT fires, so we re-attach once more shortly after to catch it. */
+const CHANNEL_SWITCH_REWATCH_MS = 400;
+const MAX_JOURNAL_ENTRIES = 80;
 
 type Row = {
     id: string;
@@ -146,7 +149,7 @@ function pruneOld() {
 }
 
 async function remember(row: Row) {
-    journal = [row, ...journal].slice(0, 80);
+    journal = [row, ...journal].slice(0, MAX_JOURNAL_ENTRIES);
     await DataStore.set(STORE, journal);
 }
 
@@ -257,11 +260,11 @@ export default definePlugin({
             inputType: ApplicationCommandInputType.BUILT_IN,
             options: [
                 { name: "count", description: "How many", type: ApplicationCommandOptionType.INTEGER, required: false },
-                { name: "channel", description: "Only show this channel's entries", type: ApplicationCommandOptionType.BOOLEAN, required: false }
+                { name: "here", description: "Only show this channel's entries", type: ApplicationCommandOptionType.BOOLEAN, required: false }
             ],
             execute: opts => {
                 const n = Math.max(1, Math.min(20, Number(findOption(opts, "count")) || 8));
-                const onlyThisChannel = findOption(opts, "channel", false);
+                const onlyThisChannel = Boolean(findOption(opts, "here", false));
                 const currentChannelId = onlyThisChannel ? SelectedChannelStore.getChannelId() : undefined;
                 const rows = currentChannelId ? journal.filter(r => r.channelId === currentChannelId) : journal;
                 if (!rows.length) return { content: "Nnaa. Journal's empty." };
@@ -309,7 +312,7 @@ export default definePlugin({
         },
         CHANNEL_SELECT: () => {
             watch();
-            setTimeout(watch, 400);
+            setTimeout(watch, CHANNEL_SWITCH_REWATCH_MS);
         }
     },
     onBeforeMessageSend(channelId, message: MessageObject) {
@@ -321,8 +324,9 @@ export default definePlugin({
     },
     async start() {
         journal = (await DataStore.get(STORE)) ?? [];
+        const before = journal.length;
         pruneOld();
-        await DataStore.set(STORE, journal);
+        if (journal.length !== before) await DataStore.set(STORE, journal);
         sync();
         watch();
     },
