@@ -134,6 +134,8 @@ function cacheKey(channelId: string | undefined, id: string) {
 }
 
 function cacheSet(key: string, value: string) {
+    // Map iteration order follows insertion order (per spec), so the first key
+    // yielded here is always the oldest insert — a cheap FIFO eviction.
     if (!contentCache.has(key) && contentCache.size >= MAX_CACHE) {
         const oldest = contentCache.keys().next().value;
         if (oldest !== undefined) contentCache.delete(oldest);
@@ -319,6 +321,11 @@ export default definePlugin({
     },
     onBeforeMessageSend(channelId, message: MessageObject) {
         if (!settings.store.persistSends || !message?.content) return;
+        // MessageObject's public type doesn't declare id/nonce (Discord assigns the
+        // real message id only after the send resolves), but some builds attach an
+        // outgoing nonce to this object before dispatch. Use it when present so
+        // later deletes/edits can be correlated back to this entry; otherwise fall
+        // back to a locally generated id.
         const withId = message as MessageObject & { id?: string; nonce?: string | number; };
         const rawId = withId.nonce ?? withId.id;
         const id = rawId != null ? String(rawId) : Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
