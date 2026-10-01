@@ -8,8 +8,9 @@ plugin model portable to a future iOS host.
 
 **This is phase one.** It ships a real, tested, portable plugin runtime
 and three example plugins that run entirely in-memory against a mock host.
-It does **not** ship a working Android app, Discord bundle patcher, or any
-code that touches a real Discord installation. See
+It also includes a buildable Android preview shell, but not a working
+Android loader, Discord bundle patcher, or code that touches a real Discord
+installation. See
 ["What is / is not implemented"](#what-is--is-not-implemented-in-this-phase)
 below for the exact boundary.
 
@@ -50,7 +51,8 @@ mobile/
     NanachiQuotes/       notification example plugin (depends on NareTheme)
     NareBadge/           UI badge registration example plugin
   android/
-    hostbridge/          Kotlin interface mirror + mock adapter (no app, no SDK build)
+    app/                 Minimal Android preview shell and Gradle app module
+    hostbridge/          Kotlin interface mirror + mock adapter
 ```
 
 1. **Host bridge** (`HostBridge`) — the only surface a plugin can touch:
@@ -114,21 +116,24 @@ TODOs.
 - Three example plugins (`NareTheme`, `NanachiQuotes`, `NareBadge`) that
   load, start, and stop through the registry in tests.
 - A Kotlin interface mirror of the host bridge plus an in-memory mock
-  (`mobile/android/hostbridge/`), with no Android SDK/Gradle build
-  dependency.
+  (`mobile/android/hostbridge/`), plus a minimal Android app shell that
+  builds debug and release APK variants.
 - Node-based unit tests (`node --test`) covering registration, dependency
   ordering, duplicate detection, incompatible-host rejection, patch
   cleanup, start/stop failure isolation, and mock storage.
-- A CI job that runs these tests independently of the Go desktop build.
+- CI jobs that run these tests and build the Android release variant
+  independently of the Go desktop build.
 
 **Explicitly NOT implemented in this phase** (tracked as roadmap items
 below, not silently assumed to work):
 - Reading, patching, or re-signing any real Discord APK/IPA/bundle.
 - Any Hermes/JavaScriptCore runtime embedding or bootstrapping.
-- A real Android app module (Gradle/AGP project, `AndroidManifest.xml`,
-  UI screens) or any iOS project.
+- A functional Android host app or any iOS project. The Android preview
+  shell only displays that host integration is not implemented.
 - Per-Discord-version bundle anchor tables or real fingerprint computation.
-- APK/IPA packaging, signing, or distribution of any kind.
+- A working loader APK, IPA packaging, or distribution of any kind. The
+  Android preview APK can be built unsigned or locally signed, but is not a
+  functional mobile release.
 - Discord account automation, credential handling, or anti-detection
   bypasses of any kind — none of that is in scope for this project ever.
 - Any Discord copyrighted assets or bundle contents (none are included
@@ -163,12 +168,16 @@ Jest/Mocha/ts-node dependency). No Discord installation, Android SDK, or
 physical/emulated device is required to build or test anything in this
 directory.
 
+The Android preview build has separate requirements and commands; see
+[`android/README.md`](android/README.md). It requires JDK 17 and Android SDK
+platform 35.
+
 ## Roadmap (beyond this phase)
 
-1. **Android packaging** — stand up a real Gradle/AGP app module under
-   `mobile/android/`, embed Hermes (or use the host app's own Hermes
-   instance via JSI), and define a concrete bundle-injection strategy with
-   a version-pinned anchor table. Fail closed (refuse to patch) for any
+1. **Android host integration** — connect the app shell to the TypeScript
+   runtime, embed Hermes (or use the host app's own Hermes instance via
+   JSI), and define a concrete bundle-injection strategy with a
+   version-pinned anchor table. Fail closed (refuse to patch) for any
    Discord version without a verified anchor entry.
 2. **iOS support** — once the Android host bridge is proven out, implement
    an equivalent Swift/Obj-C host bridge conforming to the same
@@ -177,6 +186,6 @@ directory.
    code) of a few desktop den plugins (e.g. a mobile `Abyss` layer tracker)
    to the mobile `MobilePlugin` API once a real host bridge exists to run
    them against.
-4. **Signing/distribution** — once bundle injection exists, define a
-   signing and installation flow that never automates Discord account
-   actions and never redistributes Discord's own assets.
+4. **Distribution** — once host integration exists, define a release and
+   installation flow that never automates Discord account actions and
+   never redistributes Discord's own assets.
