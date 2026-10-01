@@ -1,0 +1,16 @@
+.nr-mitty-companion {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 100;
+    color: #f4b8cc;
+    font-size: 22px;
+    line-height: 1;
+    text-shadow: 0 0 8px #e86e9a;
+    pointer-events: none;
+    animation: nr-mitty-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes nr-mitty-breathe {
+    50% { transform: scale(1.12); opacity: .72; }
+}

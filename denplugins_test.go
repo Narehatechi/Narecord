@@ -26,14 +26,24 @@ func TestWriteDenUserpluginsWritesEveryEmbeddedFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantFiles := map[string][]string{
-		"Abyss":         {"index.tsx"},
-		"Hideout":       {"index.ts", "style.css"},
-		"Incinerator":   {"index.ts", "style.css"},
-		"NareMotion":    {"index.ts", "style.css"},
-		"NarehateBadge": {"index.ts"},
-		"Narelogs":      {"index.tsx", "style.css"},
-		"NareNotes":     {"index.tsx", "style.css"},
-		"Nnaa":          {"index.tsx"},
+		"Abyss":           {"index.tsx"},
+		"AbyssDepth":      {"index.ts", "style.css"},
+		"BlessingOrCurse": {"index.ts"},
+		"Hideout":         {"index.ts", "style.css"},
+		"Incinerator":     {"index.ts", "style.css"},
+		"MittyCompanion":  {"index.ts", "style.css"},
+		"NanachiQuotes":   {"index.ts"},
+		"NareMotion":      {"index.ts", "style.css"},
+		"NarehateBadge":   {"index.ts"},
+		"Narelogs":        {"index.tsx", "style.css"},
+		"NareNotes":       {"index.tsx", "style.css"},
+		"NetherworldStew": {"index.ts"},
+		"Nnaa":            {"index.tsx"},
+		"OrthClock":       {"index.ts", "style.css"},
+		"RainbowFall":     {"index.ts", "style.css"},
+		"RainbowStars":    {"index.ts", "style.css"},
+		"RelicPing":       {"index.ts", "style.css"},
+		"WhistleRank":     {"index.ts"},
 	}
 	for _, name := range denUserpluginNames {
 		files, ok := wantFiles[name]
@@ -163,6 +173,38 @@ func TestDenPluginCardsStayPerPluginNotOneCoat(t *testing.T) {
 	}
 	if !strings.Contains(src, `name: "NareNotes"`) || !strings.Contains(src, "Field notebook") {
 		t.Fatal("NareNotes source must keep the Field notebook description the card CSS keys off")
+	}
+}
+
+func TestNewDenPluginDescriptionsMatchCardHooks(t *testing.T) {
+	css := denCSS()
+	plugins := []struct {
+		name        string
+		description string
+		hook        string
+	}{
+		{"BlessingOrCurse", "Chat button: random Blessing or Curse message from the Abyss.", "Chat button: random Blessing"},
+		{"MittyCompanion", "Small Mitty flair keeps a cute companion indicator nearby.", "Small Mitty flair"},
+		{"NanachiQuotes", "Chat bar button that sends a random Nanachi quote or bit of wisdom.", "Chat bar button that sends a random Nanachi"},
+		{"AbyssDepth", "Thin Abyss depth strip shows the selected channel's layer mood.", "Thin Abyss depth strip"},
+		{"NetherworldStew", "Chat button that posts a random Abyss food name from the field menu.", "Chat button that posts a random Abyss food"},
+		{"OrthClock", "Small Orth-time clock widget displays your local time.", "Small Orth-time clock"},
+		{"RainbowFall", "Rainbow stars and orbs fall softly through the hideout background.", "Rainbow stars and orbs fall"},
+		{"RainbowStars", "Rainbow 5-point stars add quiet static color to the den.", "Rainbow 5-point stars"},
+		{"RelicPing", "Highlights configured Abyss keywords such as relic names and curse words.", "Highlights configured Abyss keywords"},
+		{"WhistleRank", "Tracks a playful local whistle rank from White through Sovereign.", "Tracks a playful local whistle rank"},
+	}
+	for _, plugin := range plugins {
+		if !strings.Contains(css, `title^="`+plugin.hook+`"`) {
+			t.Errorf("den CSS missing card hook for %s", plugin.name)
+		}
+		src, err := denPluginIndexSource(plugin.name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(src, `description: "`+plugin.description+`"`) {
+			t.Errorf("%s description does not match its den card hook", plugin.name)
+		}
 	}
 }
 

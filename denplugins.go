@@ -25,18 +25,28 @@ import (
 // desktop.asar. After a tagged Narecord release includes that asset, stock
 // Install lists them in Plugin Management. Equicord remains the asar fallback.
 //
-//go:embed plugins/Abyss plugins/Hideout plugins/Incinerator plugins/NareMotion plugins/NarehateBadge plugins/Narelogs plugins/NareNotes plugins/Nnaa
+//go:embed plugins/Abyss plugins/Hideout plugins/Incinerator plugins/NareMotion plugins/NarehateBadge plugins/Narelogs plugins/NareNotes plugins/Nnaa plugins/BlessingOrCurse plugins/MittyCompanion plugins/NanachiQuotes plugins/AbyssDepth plugins/NetherworldStew plugins/OrthClock plugins/RainbowFall plugins/RainbowStars plugins/RelicPing plugins/WhistleRank
 var denUserpluginFS embed.FS
 
 var denUserpluginNames = []string{
 	"Abyss",
+	"AbyssDepth",
+	"BlessingOrCurse",
 	"Hideout",
 	"Incinerator",
+	"MittyCompanion",
+	"NanachiQuotes",
 	"NareMotion",
 	"NarehateBadge",
 	"Narelogs",
 	"NareNotes",
+	"NetherworldStew",
 	"Nnaa",
+	"OrthClock",
+	"RainbowFall",
+	"RainbowStars",
+	"RelicPing",
+	"WhistleRank",
 }
 
 func isDenUserpluginName(name string) bool {

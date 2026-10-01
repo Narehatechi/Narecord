@@ -33,7 +33,7 @@ for dir in "$SRC"/*/; do
   copied+=("$name")
 done
 
-expected=(Abyss Hideout Incinerator NareMotion NarehateBadge Narelogs NareNotes Nnaa narePerf)
+expected=(Abyss AbyssDepth BlessingOrCurse Hideout Incinerator MittyCompanion NanachiQuotes NareMotion NarehateBadge Narelogs NareNotes NetherworldStew Nnaa OrthClock RainbowFall RainbowStars RelicPing WhistleRank narePerf)
 missing=()
 for name in "${expected[@]}"; do
   if [[ ! -d "$DEST/$name" ]]; then
