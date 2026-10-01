@@ -1,0 +1,24 @@
+.nr-rainbow-fall {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.nr-rainbow-orb {
+    position: absolute;
+    top: -12px;
+    left: var(--nr-x);
+    width: var(--nr-size);
+    height: var(--nr-size);
+    border-radius: 50%;
+    background: hsl(var(--nr-hue), 100%, 70%);
+    box-shadow: 0 0 9px currentColor;
+    opacity: .72;
+    animation: nr-rainbow-drop var(--nr-duration) linear var(--nr-delay) infinite;
+}
+
+@keyframes nr-rainbow-drop {
+    to { transform: translate3d(20px, 110vh, 0); }
+}

@@ -1,0 +1,8 @@
+.nr-relic-ping {
+    border-radius: 3px;
+    background: rgb(228 192 74 / 28%);
+    box-shadow: inset 0 -1px #e4c04a;
+    color: #ffe59a;
+    font-weight: 700;
+    padding: 0 2px;
+}
