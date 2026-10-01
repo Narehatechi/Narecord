@@ -4,5 +4,3 @@ vencord
 *.syso
 *.old
 vendor
-mobile/node_modules
-mobile/dist
