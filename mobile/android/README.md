@@ -24,6 +24,19 @@ The release build is **unsigned** unless all four signing environment
 variables below are set. An unsigned APK is suitable for build verification,
 not installation or publication.
 
+Create a release keystore once and keep it private and backed up; use the
+same keystore for future updates:
+
+```sh
+keytool -genkeypair -v \
+  -keystore narecord-release.keystore \
+  -alias narecord \
+  -keyalg RSA -keysize 4096 -validity 10000
+```
+
+`keytool` prompts for the store and key passwords. Do not pass passwords on
+the command line or commit the generated keystore.
+
 ```sh
 export NARECORD_ANDROID_KEYSTORE=/absolute/path/to/release.keystore
 export NARECORD_ANDROID_KEYSTORE_PASSWORD='...'
